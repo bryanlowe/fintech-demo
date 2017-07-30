@@ -7,7 +7,7 @@
     "url": "???"
   },
   "scripts": {
-    "start": "node index.js & au run --watch",
+    "start": "node index.js",
     "test": "au test --watch"
   },
   "license": "MIT",
