@@ -1,0 +1,11 @@
+aurelia_project
+custom_typings
+typings
+favicon.ico
+tsconfig.json
+tslint.json
+typings.json
+.editorconfig
+node_modules
+.idea
+.DS_STORE
