@@ -6,12 +6,18 @@
     "type": "???",
     "url": "???"
   },
+  "scripts": {
+    "start": "node index.js",
+    "au_start": "au run --watch",
+    "test": "au test --watch"
+  },
   "license": "MIT",
   "dependencies": {
     "aurelia-bootstrapper": "^1.0.0",
     "aurelia-animator-css": "^1.0.0",
     "bluebird": "^3.4.1",
     "requirejs": "^2.3.2",
+    "express": "^4.15.2",
     "text": "github:requirejs/text#latest"
   },
   "peerDependencies": {},
@@ -42,6 +48,7 @@
     "karma": "^0.13.22",
     "karma-chrome-launcher": "^1.0.1",
     "karma-jasmine": "^1.0.2",
+    "karma-jasmine-html-reporter": "^0.2.2",
     "karma-typescript-preprocessor": "^0.2.1"
   }
 }
