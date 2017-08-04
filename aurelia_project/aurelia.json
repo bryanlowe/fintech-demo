@@ -93,6 +93,7 @@
           "node_modules/requirejs/require.js"
         ],
         "dependencies": [
+          "jquery",
           "aurelia-binding",
           "aurelia-bootstrapper",
           "aurelia-dependency-injection",

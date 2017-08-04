@@ -1,0 +1,79 @@
+<template bindable="router">
+          <div class="col-md-3 left_col">
+          <div class="left_col scroll-view">
+            <div class="navbar nav_title" style="border: 0;">
+              <a href="index.html" class="site_title"><i class="fa fa-paw"></i> <span>Market View!</span></a>
+            </div>
+            <div class="clearfix"></div>
+
+            <!-- menu profile quick info -->
+            <div class="profile">
+              <div class="profile_pic">
+                <img src="src/img/img.jpg" alt="..." class="img-circle profile_img">
+              </div>
+              <div class="profile_info">
+                <span>Welcome,</span>
+                <h2>John Doe</h2>
+              </div>
+            </div>
+            <!-- /menu profile quick info -->
+
+            <br />
+  
+            <!-- sidebar menu -->
+            <div id="sidebar-menu" class="main_menu_side hidden-print main_menu">
+              <div class="menu_section active">
+                  <h3>General</h3>
+                  <ul class="nav side-menu" style="">
+                      <li><a id="graphli" click.delegate="anchorClicked($event)"><i class="fa fa-bar-chart-o"></i> Graph Type <span class="fa fa-chevron-down"></span></a>
+                          <ul class="nav child_menu" style="display: none;">
+                              <li><a id="lineGraphBtn" href="javascript:void()">Line Graph</a></li>
+                              <li><a id="barGraphBtn" href="javascript:void()">Bar Graph</a></li>
+                              <li><a id="pieGraphBtn" href="javascript:void()">Pie Graph</a></li>
+                          </ul>
+                      </li>
+                      <li><a id="timeli" click.delegate="anchorClicked($event)"><i class="fa fa-clock-o"></i> Time Frame <span class="fa fa-chevron-down"></span></a>
+                          <ul class="nav child_menu">
+                              <li><a id="weeksBtn" href="javascript:void()">Weeks</a></li>
+                              <li><a id="monthsBtn" href="javascript:void()">Months</a></li>
+                              <li><a id="yearsBtn" href="javascript:void()">Years</a></li>
+                          </ul>
+                      </li>
+                      <li><a id="typeli" click.delegate="anchorClicked($event)"><i class="fa fa-cubes"></i> Data Type <span class="fa fa-chevron-down"></span></a>
+                          <ul class="nav child_menu">
+                              <li class="unitsCtrl"><a id="unitsBtn" href="javascript:void()">Units</a></li>
+                              <li class="revenueCtrl"><a id="revenueBtn" href="javascript:void()">Revenue</a></li>
+                          </ul>
+                      </li>
+                      <li id="percentageDataTypes">
+                          <a id="formatli" click.delegate="anchorClicked($event)"><i class="fa fa-percent"></i> Percentage Data Type <span class="fa fa-chevron-down"></span></a>
+                          <ul class="nav child_menu">
+                              <li class="unitsCtrl"><a id="unitsPercentBtn" href="javascript:void()">Units %</a></li>
+                              <li class="revenueCtrl"><a id="revenuePercentBtn" href="javascript:void()">Revenue %</a></li>
+                          </ul>
+                      </li>
+                  </ul>
+              </div>
+            </div>
+            <!-- /sidebar menu -->
+
+            <!-- /menu footer buttons -->
+            <div class="sidebar-footer hidden-small">
+              <a data-toggle="tooltip" data-placement="top" title="Settings">
+                <span class="glyphicon glyphicon-cog" aria-hidden="true"></span>
+              </a>
+              <a data-toggle="tooltip" data-placement="top" title="FullScreen">
+                <span class="glyphicon glyphicon-fullscreen" aria-hidden="true"></span>
+              </a>
+              <a data-toggle="tooltip" data-placement="top" title="Lock">
+                <span class="glyphicon glyphicon-eye-close" aria-hidden="true"></span>
+              </a>
+              <a data-toggle="tooltip" data-placement="top" title="Logout" href="login.html">
+                <span class="glyphicon glyphicon-off" aria-hidden="true"></span>
+              </a>
+            </div>
+            <!-- /menu footer buttons -->
+              
+          </div>
+        </div>
+</template>
