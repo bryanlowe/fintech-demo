@@ -35,6 +35,7 @@
     "jquery": "^3.1.1",
     "jquery-flot": "^0.8.3",
     "requirejs": "^2.3.2",
+    "connect-wwwhisper": "*",
     "text": "github:requirejs/text#latest"
   },
   "peerDependencies": {},
