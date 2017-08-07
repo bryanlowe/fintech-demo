@@ -64,6 +64,16 @@ define('not-found',["require", "exports"], function (require, exports) {
     exports.NotFound = NotFound;
 });
 
+define('pages/index',["require", "exports", "aurelia-router"], function (require, exports, aurelia_router_1) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    function configure(config) {
+        var router = config.container.get(aurelia_router_1.Router);
+        router.addRoute({ route: 'home', name: 'home', moduleId: 'pages/home/main', nav: true });
+    }
+    exports.configure = configure;
+});
+
 define('resources/index',["require", "exports"], function (require, exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
@@ -71,16 +81,6 @@ define('resources/index',["require", "exports"], function (require, exports) {
         config.globalResources([
             './elements/market-view/data-table-element',
         ]);
-    }
-    exports.configure = configure;
-});
-
-define('pages/index',["require", "exports", "aurelia-router"], function (require, exports, aurelia_router_1) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    function configure(config) {
-        var router = config.container.get(aurelia_router_1.Router);
-        router.addRoute({ route: 'home', name: 'home', moduleId: 'pages/home/main', nav: true });
     }
     exports.configure = configure;
 });
@@ -234,78 +234,6 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-define('resources/elements/market-view/data-table-element',["require", "exports", "aurelia-framework", "aurelia-framework", "aurelia-binding", "jquery", "datatables.net-responsive-bs"], function (require, exports, aurelia_framework_1, aurelia_framework_2, aurelia_binding_1, $, DataTable) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    var DataTableElement = (function () {
-        function DataTableElement(bindingEngine) {
-            this.bindingEngine = bindingEngine;
-            this.tableData = { header: [], rows: [] };
-            this.subscription = null;
-            this.dataTable = null;
-        }
-        DataTableElement.prototype.updateDatatable = function () {
-            this.constructDataRows();
-        };
-        DataTableElement.prototype.constructHeader = function () {
-            var thead = '<thead><tr><th>Brand</th>';
-            for (var i = 0, ii = this.tableData.header.length; i < ii; i++) {
-                thead += '<th>' + this.tableData.header[i] + '</th>';
-            }
-            thead += '</tr></thead>';
-            $('#datatable-responsive').prepend(thead);
-        };
-        DataTableElement.prototype.constructDataRows = function () {
-            var _this = this;
-            if (DataTable) {
-                if (this.dataTable !== null) {
-                    this.dataTable.destroy();
-                    this.dataTable = null;
-                    $('#datatable-responsive').empty();
-                }
-                this.constructHeader();
-                this.dataTable = $('#datatable-responsive').DataTable({
-                    "data": this.tableData.rows
-                });
-            }
-            else {
-                setTimeout(function () {
-                    _this.constructDataRows();
-                }, 100);
-            }
-        };
-        DataTableElement.prototype.attached = function () {
-            var _this = this;
-            this.subscription = this.bindingEngine.propertyObserver(this.tableData, 'header')
-                .subscribe(function (newValue, oldValue) { return _this.updateDatatable(); });
-        };
-        DataTableElement.prototype.detached = function () {
-            this.subscription.dispose();
-        };
-        __decorate([
-            aurelia_framework_2.bindable,
-            __metadata("design:type", Object)
-        ], DataTableElement.prototype, "tableData", void 0);
-        DataTableElement = __decorate([
-            aurelia_framework_1.customElement('data-table'),
-            aurelia_framework_2.useView('./data-table-element.html'),
-            aurelia_framework_2.inject(aurelia_binding_1.BindingEngine),
-            __metadata("design:paramtypes", [aurelia_binding_1.BindingEngine])
-        ], DataTableElement);
-        return DataTableElement;
-    }());
-    exports.DataTableElement = DataTableElement;
-});
-
-var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
-};
-var __metadata = (this && this.__metadata) || function (k, v) {
-    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
-};
 define('pages/home/components/index',["require", "exports", "aurelia-fetch-client", "aurelia-framework", "aurelia-binding"], function (require, exports, aurelia_fetch_client_1, aurelia_framework_1, aurelia_binding_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
@@ -398,6 +326,78 @@ define('pages/home/components/index',["require", "exports", "aurelia-fetch-clien
         return HomeLanding;
     }());
     exports.HomeLanding = HomeLanding;
+});
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+define('resources/elements/market-view/data-table-element',["require", "exports", "aurelia-framework", "aurelia-framework", "aurelia-binding", "jquery", "datatables.net-responsive-bs"], function (require, exports, aurelia_framework_1, aurelia_framework_2, aurelia_binding_1, $, DataTable) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    var DataTableElement = (function () {
+        function DataTableElement(bindingEngine) {
+            this.bindingEngine = bindingEngine;
+            this.tableData = { header: [], rows: [] };
+            this.subscription = null;
+            this.dataTable = null;
+        }
+        DataTableElement.prototype.updateDatatable = function () {
+            this.constructDataRows();
+        };
+        DataTableElement.prototype.constructHeader = function () {
+            var thead = '<thead><tr><th>Brand</th>';
+            for (var i = 0, ii = this.tableData.header.length; i < ii; i++) {
+                thead += '<th>' + this.tableData.header[i] + '</th>';
+            }
+            thead += '</tr></thead>';
+            $('#datatable-responsive').prepend(thead);
+        };
+        DataTableElement.prototype.constructDataRows = function () {
+            var _this = this;
+            if (DataTable) {
+                if (this.dataTable !== null) {
+                    this.dataTable.destroy();
+                    this.dataTable = null;
+                    $('#datatable-responsive').empty();
+                }
+                this.constructHeader();
+                this.dataTable = $('#datatable-responsive').DataTable({
+                    "data": this.tableData.rows
+                });
+            }
+            else {
+                setTimeout(function () {
+                    _this.constructDataRows();
+                }, 100);
+            }
+        };
+        DataTableElement.prototype.attached = function () {
+            var _this = this;
+            this.subscription = this.bindingEngine.propertyObserver(this.tableData, 'header')
+                .subscribe(function (newValue, oldValue) { return _this.updateDatatable(); });
+        };
+        DataTableElement.prototype.detached = function () {
+            this.subscription.dispose();
+        };
+        __decorate([
+            aurelia_framework_2.bindable,
+            __metadata("design:type", Object)
+        ], DataTableElement.prototype, "tableData", void 0);
+        DataTableElement = __decorate([
+            aurelia_framework_1.customElement('data-table'),
+            aurelia_framework_2.useView('./data-table-element.html'),
+            aurelia_framework_2.inject(aurelia_binding_1.BindingEngine),
+            __metadata("design:paramtypes", [aurelia_binding_1.BindingEngine])
+        ], DataTableElement);
+        return DataTableElement;
+    }());
+    exports.DataTableElement = DataTableElement;
 });
 
 define('text!app.html', ['module'], function(module) { module.exports = "<template>\n    <div class=\"container body\">\n        <div class=\"main_container\">\n            <!-- top navigation -->\n            <compose view-model=\"./pages/page-elements/topbar-menu\"></compose>\n            <!-- /top navigation -->\n\n            <!-- main content -->\n            <router-view></router-view>\n            <!-- /main-content -->\n\n            <!-- tsite footer -->\n            <compose view-model=\"./pages/page-elements/site-footer\"></compose>\n            <!-- /site footer -->\n        </div>\n    </div>\n\n    <!-- Custom Theme Scripts -->\n    <script src=\"scripts/build/js/constants.js\"></script>\n    <script src=\"scripts/build/js/custom_bk.js\"></script>\n</template>"; });
