@@ -1,22 +1,24 @@
 import {HttpClient} from 'aurelia-fetch-client';
 import {bindable, bindingMode, inject} from 'aurelia-framework';
+import {BindingEngine} from 'aurelia-binding';
 import * as $ from 'jquery';
 
-@inject(HttpClient)
+@inject(HttpClient, BindingEngine)
 export class HomeLanding { 
 	private self = this; // this object has to be saved in order to access class properties from callbacks
-	@bindable({ defaultBindingMode: bindingMode.twoWay }) pageState: any;
-	private model: any;
-	@bindable tableData: any = {header: [], data: []};
-	@bindable graphData: any;
+	@bindable({ defaultBindingMode: bindingMode.twoWay }) page_state: any;
+	@bindable model: any = {table_data: {}};
+	@bindable tableData: any = {header: [], rows: []}; 
+	private subscribers: any[] = [];
 
-	constructor(private httpClient: HttpClient){
+	constructor(private httpClient: HttpClient, private bindingEngine: BindingEngine){
 		// initial page state
-		this.pageState = {
+		this.page_state = {
 			model: 'brandshare',
-			time_frame: 'weeks',
+			time_frame: 'week',
 			data_type: 'revenue',
-			data_format: 'whole'
+			data_format: 'whole',
+			graph_type: 'line'
 		};
 
 		// set httpClient
@@ -28,58 +30,91 @@ export class HomeLanding {
 	}
 
 	/**
-	 * Constructs the table data object
+	 * Update the page state's model
 	 */
-	constructTable(){
-		// sort the model by time_frame
-		this.model.sort((a, b) => {
-			a = new Date(a._id);
-			b = new Date(b._id);
-			return a - b;
-		});
+	updatePageModel(model){
+		this.page_state.model = model;
+	}
 
-		// Create the table header
-		this.tableData.header = this.model.map(function(obj){
-			return obj._id;
-		});
+	/**
+	 * Update the page state's graph type
+	 */
+	updatePageGraphType(graph_type){
+		this.page_state.graph_type = graph_type;
+	}
 
-		// Create the table data
-		let data = {};
-		this.model.forEach((sale_statement) => {
-			sale_statement.dataset.forEach((data_entry) => {
-				data[data_entry.brand] = data[data_entry.brand] || [];
-				if(this.pageState.data_type === 'revenue'){
-					data[data_entry.brand].push(((this.pageState.data_format === 'whole') ? data_entry.revenue : (data_entry.revenue / sale_statement.revenue_total * 100)).toFixed(2));
-				} else {
-					data[data_entry.brand].push(((this.pageState.data_format === 'whole') ? data_entry.units : (data_entry.units / sale_statement.unit_total * 100)).toFixed(2) + '%');
-				}
-			});
-		});
+	/**
+	 * Update the page state's time frame
+	 */
+	updatePageTimeFrame(time_frame){
+		this.page_state.time_frame = time_frame;
+	}
 
-		// apppend the brand before the number set
-		for(let key in data){
-			let temp = [key];
-			this.tableData.data.push(temp.concat(data[key]));
-		}
+	/**
+	 * Update the page state's data type
+	 */
+	updatePageDataType(data_type){
+		this.page_state.data_type = data_type;
+	}
+
+	/**
+	 * Update the page state's data format
+	 */
+	updatePageDataFormat(data_format){
+		this.page_state.data_format = data_format;
+	}
+
+	/**
+	 * Updates the DataTable data
+	 */
+	updateDataTable(){
+		this.tableData.header = this.model.table_data.header;
+		this.tableData.rows = this.model.table_data.rows;
 	}
 
 	/**
 	 * Fetches new data from the data model end point
 	 */
 	fetchModelData(class_obj){
-		return this.httpClient.fetch(this.pageState.model+'/'+this.pageState.time_frame)
+		return this.httpClient.fetch(this.page_state.model+'/'+this.page_state.time_frame+'/'+this.page_state.data_type+'/'+this.page_state.data_format)
 			.then(response => response.json())
-			.then(data => class_obj.model = data);
+			.then(data => {class_obj.model = data})
+			.then(() => this.updateDataTable());
 	}
 
 	/**
-	 * Initialize the page state and data model
+	 * Creates the subscriber list
+	 */
+	private setSubscribers(){
+		this.subscribers.push(this.bindingEngine.propertyObserver(this.page_state, 'model')
+      		.subscribe((newValue, oldValue) => this.fetchModelData(this)));
+		this.subscribers.push(this.bindingEngine.propertyObserver(this.page_state, 'time_frame')
+      		.subscribe((newValue, oldValue) => this.fetchModelData(this)));
+		this.subscribers.push(this.bindingEngine.propertyObserver(this.page_state, 'data_type')
+      		.subscribe((newValue, oldValue) => this.fetchModelData(this)));
+		this.subscribers.push(this.bindingEngine.propertyObserver(this.page_state, 'data_format')
+      		.subscribe((newValue, oldValue) => this.fetchModelData(this)));
+		//this.subscribers.push(this.bindingEngine.propertyObserver(this.page_state, 'graph_type')
+      	//	.subscribe((newValue, oldValue) => this.changeGraphModel()));
+	}
+
+	/**
+	 * Initialize create subscribers
 	 */
 	attached(){
-		this.fetchModelData(this)
-			.then(() => {
-				this.constructTable();
-			});
-		
+		// initial model data fetch
+	    this.fetchModelData(this)
+	    	.then(() => {
+	    		this.setSubscribers();
+	    	});
+	}
+
+	/**
+	 * Dispose of subscribers
+	 */
+	detached(){
+		for(let i = 0, ii = this.subscribers.length; i < ii; i++){
+			this.subscribers[i].dispose();
+		}
 	}
 }

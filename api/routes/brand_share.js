@@ -1,7 +1,7 @@
 var mongoose = require('mongoose');
-var model = mongoose.model('BrandShare');
+var model = mongoose.model('Dataset');
 
-function createAggregate(time_frame){
+model.schema.methods.createAggregate = function(time_frame){
 	var result = [
   		{
   			'$unwind': '$sale_statement'
@@ -64,35 +64,15 @@ function createAggregate(time_frame){
 	return result;
 }
 
-// Aggregate data by weeks
-exports.getWeeks = function(req, res) {
-  	model.aggregate(createAggregate('week')).exec(function(error, data) {
+// Aggregates model data
+exports.getModelData = function(req, res){
+    model.aggregate(model.schema.methods.createAggregate(req.params.time_frame)).exec(function(error, data) {
         if (error) {
             res.send({result:'ERROR', message: error});
         } else {
-            res.json(data);
+            result = {};
+            result['table_data'] = model.schema.methods.createDataTable(data, req.params);
+            res.json(result);
         }   
     });
-};
-
-// Aggregate data by months
-exports.getMonths = function(req, res) {
-  	model.aggregate(createAggregate('month')).exec(function(error, data) {
-        if (error) {
-            res.send({result:'ERROR', message: error});
-        } else {
-            res.json(data);
-        }   
-    });
-};
-
-// Aggregate data by years
-exports.getYears = function(req, res) {
-  	model.aggregate(createAggregate('year')).exec(function(error, data) {
-        if (error) {
-            res.send({result:'ERROR', message: error});
-        } else {
-            res.send(data);
-        }   
-    });
-};
+}

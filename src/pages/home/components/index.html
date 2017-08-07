@@ -1,45 +1,80 @@
 <template>
     <div class="right_col" role="main">
-    	<!-- button panel -->
-        <div class="text-center mtop20">
-            <a href="#" id="brand_share_btn" class="btn btn-lg btn-primary">Brand Share</a>
-            <a href="#" id="sales_growth_btn" class="btn btn-lg btn-primary">Sales Growth</a>
-            <a href="#" id="industry_btn" class="btn btn-lg btn-primary">Industry</a>
-            <a href="#" id="product_trends_btn" class="btn btn-lg btn-primary">Product Trends</a>
-            <a href="#" id="pricing_btn" class="btn btn-lg btn-primary">Pricing</a>
+        <div class="col-md-12">
+        	<!-- button panel -->
+            <div class="text-center mtop20">
+                <h2>Data Model</h2>
+                <button click.trigger="updatePageModel('brandshare')" id="brand_share_btn" class="btn btn-lg btn-primary">Brand Share</button>
+                <button click.trigger="updatePageModel('salesgrowth')" href="#" id="sales_growth_btn" class="btn btn-lg btn-primary">Sales Growth</button>
+                <button click.trigger="updatePageModel('industry')" href="#" id="industry_btn" class="btn btn-lg btn-primary">Industry</button>
+                <button click.trigger="updatePageModel('producttrends')" href="#" id="product_trends_btn" class="btn btn-lg btn-primary">Product Trends</button>
+                <button click.trigger="updatePageModel('pricing')" href="#" id="pricing_btn" class="btn btn-lg btn-primary">Pricing</button>
+            </div>
         </div>
 
-        <!-- market view panel -->
-        <div id="market_view" class="row">
-            <div class="col-md-12 col-sm-12 col-xs-12">
-                <div class="x_panel">
-                    <div class="x_title">
-                        <h2 id="view_title">Market View</h2>
-                        <div class="clearfix"></div>
-                    </div>
-                    <div class="x_content">
-                        <!-- Interactive Chart -->
-                        <div id="market_view_chart">
-                            <div class="x_panel">
-                                <div id="graph-container" class="x_content">
-                                    <canvas id="lineChart" style="display: none"></canvas>
-                                    <canvas id="barChart" style="display: none"></canvas>
-                                    <canvas id="pieChart" style="display: none"></canvas>
-                                </div>
+        <div class="col-md-12 row">
+            <div class="text-center col-md-2">
+                <!-- button panel -->
+                <h2>Graph Type</h2>
+                <div class="btn-group-vertical">
+                    <button click.trigger="updatePageGraphType('line')" class="btn btn-lg btn-primary">Line Graph</button>
+                    <button click.trigger="updatePageGraphType('bar')" class="btn btn-lg btn-primary">Bar Graph</button>
+                    <button click.trigger="updatePageGraphType('pie')" class="btn btn-lg btn-primary">Pie Graph</button>
+                </div>
+                <div class="clear"></div><br /><br />
+                <h2>Time Frame</h2>
+                <div class="btn-group-vertical">
+                    <button click.trigger="updatePageTimeFrame('week')" class="btn btn-lg btn-primary">Weeks</button>
+                    <button click.trigger="updatePageTimeFrame('month')" class="btn btn-lg btn-primary">Months</button>
+                    <button click.trigger="updatePageTimeFrame('year')" class="btn btn-lg btn-primary">Years</button>
+                </div>
+                <div class="clear"></div><br /><br />
+                <h2>Data Type</h2>
+                <div class="btn-group-vertical">
+                    <button click.trigger="updatePageDataType('units')" class="btn btn-lg btn-primary">Units</button>
+                    <button click.trigger="updatePageDataType('revenue')" class="btn btn-lg btn-primary">Revenue</button>
+                </div>
+                <div class="clear"></div><br /><br />
+                <h2>Data Format</h2>
+                <div class="btn-group-vertical">
+                    <button click.trigger="updatePageDataFormat('whole')" class="btn btn-lg btn-primary">Whole Numbers</button>
+                    <button click.trigger="updatePageDataFormat('percentage')" class="btn btn-lg btn-primary">Percentages</button>
+                </div>
+            </div>
+            <div class="col-md-10">
+                <!-- market view panel -->
+                <div id="market_view" class="row">
+                    <div class="col-md-12 col-sm-12 col-xs-12">
+                        <div class="x_panel">
+                            <div class="x_title">
+                                <h2 id="view_title">Market View</h2>
+                                <div class="clearfix"></div>
                             </div>
-                        </div>
+                            <div class="x_content">
+                                <!-- Interactive Chart -->
+                                <div id="market_view_chart">
+                                    <div class="x_panel">
+                                        <div id="graph-container" class="x_content">
+                                            <canvas id="lineChart" style="display: none"></canvas>
+                                            <canvas id="barChart" style="display: none"></canvas>
+                                            <canvas id="pieChart" style="display: none"></canvas>
+                                        </div>
+                                    </div>
+                                </div>
 
-                        <!-- Interactive Table -->
-                        <div id="market_view_table">
-                            <div class="x_panel">
-                                <div id="datatable-container" class="x_content">
-                                    <data-table table-data.bind="tableData"></data-table>
+                                <!-- Interactive Table -->
+                                <div id="market_view_table">
+                                    <div class="x_panel">
+                                        <div id="datatable-container" class="x_content">
+                                            <data-table table-data.bind="tableData"></data-table>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
+        </div>  
     </div>
 </template>

@@ -19,29 +19,19 @@ app.use(express.static(__dirname + '/'));
 app.get('/', routes.index);
 
 // brandshare routes
-app.get('/brandshare/weeks', brand_share.getWeeks); // aggregates brand share by weeks
-app.get('/brandshare/months', brand_share.getMonths); // aggregates brand share by months
-app.get('/brandshare/years', brand_share.getYears); // aggregates brand share by years 
+app.get('/brandshare/:time_frame/:data_type/:data_format', brand_share.getModelData); // aggregates brand share data
 
 // sales growth routes
-app.get('/salesgrowth/weeks', sales_growth.getWeeks); // aggregates sales growth by weeks
-app.get('/salesgrowth/months', sales_growth.getMonths); // aggregates sales growth by months
-app.get('/salesgrowth/years', sales_growth.getYears); // aggregates sales growth by years 
+app.get('/salesgrowth/:time_frame/:data_type/:data_format', sales_growth.getModelData); // aggregates sales growth data
 
 // industry routes
-app.get('/industry/weeks', industry.getWeeks); // aggregates industry by weeks
-app.get('/industry/months', industry.getMonths); // aggregates industry by months
-app.get('/industry/years', industry.getYears); // aggregates industry by years 
+app.get('/industry/:time_frame/:data_type/:data_format', industry.getModelData); // aggregates industry data
 
 // product trends routes
-app.get('/producttrends/weeks', product_trends.getWeeks); // aggregates product trends by weeks
-app.get('/producttrends/months', product_trends.getMonths); // aggregates product trends by months
-app.get('/producttrends/years', product_trends.getYears); // aggregates product trends by years 
+app.get('/producttrends/:time_frame/:data_type/:data_format', product_trends.getModelData); // aggregates product trends data
 
 // pricing routes
-app.get('/pricing/weeks', pricing.getWeeks); // aggregates pricing by weeks
-app.get('/pricing/months', pricing.getMonths); // aggregates pricing by months
-app.get('/pricing/years', pricing.getYears); // aggregates pricing by years 
+app.get('/pricing/:time_frame/:data_type/:data_format', pricing.getModelData); // aggregates pricing data
 
 app.listen(app.get('port'), function() {
   console.log('Node app is running on port', app.get('port'));

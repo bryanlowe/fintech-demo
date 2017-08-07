@@ -11,7 +11,7 @@ import * as DataTable from 'datatables.net-responsive-bs';
  */
 @inject(BindingEngine)
 export class DataTableElement { 
-	@bindable tableData: any = {header: [], data: []}; 
+	@bindable tableData: any = {header: [], rows: []}; 
   private subscription: any = null;
   private dataTable: any = null;
 
@@ -21,42 +21,47 @@ export class DataTableElement {
    * updates the data table
    */
   private updateDatatable(){
-    this.constructHeader();
     this.constructDataRows();
   }
 
+  /**
+   * Creates the table header
+   */
   private constructHeader(){
     // create headers
-    var thead = '<tr><th>Brand</th>';
+    var thead = '<thead><tr><th>Brand</th>';
     for(var i = 0, ii = this.tableData.header.length; i < ii; i++){
         thead += '<th>' + this.tableData.header[i] + '</th>';
     }
-    thead += '</tr>';
-    $('#datatable-thead').html(thead);
+    thead += '</tr></thead>';
+    $('#datatable-responsive').prepend(thead);
   }
 
+  /**
+   * Populates the table rows
+   */
   private constructDataRows(){
-    if(DataTable){
-      $('#datatable').DataTable({
-        "data": this.tableData.data
+    if(DataTable){ // check if the plugin exists, there is a delay between loading and attaching
+      // Destroy the dataTable and empty because the columns may change!
+      if (this.dataTable !== null ) {
+          this.dataTable.destroy();
+          this.dataTable = null;
+          $('#datatable-responsive').empty();
+      }
+      this.constructHeader();
+
+      this.dataTable = $('#datatable-responsive').DataTable({
+        "data": this.tableData.rows
       });
     } else {
       setTimeout(() => {
         this.constructDataRows();
       }, 100);
     }
-    //console.log(DataTable);
-
-    
-    
-    //let temp = new $.fn.DataTable.Api('#datatable');
-    //$('#datatable').DataTable().api();
-    //$('#datatable').dataTable();
-    //console.log($('#datatable'));
   }
 
 	attached(){
-    // subscribe
+    // subscribe to data table row changes
     this.subscription = this.bindingEngine.propertyObserver(this.tableData, 'header')
       .subscribe((newValue, oldValue) => this.updateDatatable());
   }
