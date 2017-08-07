@@ -12,10 +12,7 @@ var app = express();
 
 // app configurations
 app.set('port', process.env.PORT || 5000);
-// if wwwhisper variables set
-if(process.env.WWWHISPER_URL && process.env.WWWHISPER_DISABLE){
-	app.use(wwwhisper());
-}
+app.use(wwwhisper());
 app.use(express.static(__dirname + '/'));
 
 // homepage
