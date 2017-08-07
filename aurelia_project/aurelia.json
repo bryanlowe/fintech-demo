@@ -93,11 +93,16 @@
           "node_modules/requirejs/require.js"
         ],
         "dependencies": [
+          "datatables.net",
+          "datatables.net-bs",
+          "datatables.net-responsive",
+          "datatables.net-responsive-bs",
           "jquery",
           "aurelia-binding",
           "aurelia-bootstrapper",
           "aurelia-dependency-injection",
           "aurelia-event-aggregator",
+          "aurelia-fetch-client",
           "aurelia-framework",
           "aurelia-history",
           "aurelia-history-browser",
