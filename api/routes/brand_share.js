@@ -81,6 +81,7 @@ exports.getModelData = function(req, res){
             result['table_data'] = model.schema.methods.createDataTable(data, req.params);
             result['line_graph_data'] = model.schema.methods.createLineGraphData(result['table_data']);
             result['bar_graph_data'] = model.schema.methods.createBarGraphData(result['table_data']);
+            result['pie_graph_data'] = model.schema.methods.createPieGraphData(result['table_data']);
             res.json(result);
         }   
     });

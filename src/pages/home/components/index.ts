@@ -86,6 +86,10 @@ export class HomeLanding {
 			this.graphData.type = 'bar';
 			this.graphData.options = this.model.bar_graph_data.options;
 			this.graphData.data = this.model.bar_graph_data.data;
+		} else if(this.page_state.graph_type === 'pie'){
+			this.graphData.type = 'pie';
+			this.graphData.options = this.model.pie_graph_data.options;
+			this.graphData.data = this.model.pie_graph_data.data;
 		}
 	}
 

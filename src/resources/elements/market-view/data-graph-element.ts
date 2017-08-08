@@ -21,6 +21,11 @@ export class DataGraphElement {
    */
   private updateDataGraph(){
     $('#chartjsGraph, .chartjs-hidden-iframe').remove();
+    if(this.graphData.type === 'pie'){
+      $('#graph-container').css('width', '600px');
+    } else {
+      $('#graph-container').css('width', '100%');
+    }
     $('#graph-container').append('<canvas id="chartjsGraph"></canvas>');
     let context = $("#chartjsGraph")[0];
     let chart = new Chart(context, {

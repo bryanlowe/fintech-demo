@@ -147,6 +147,31 @@ datasetSchema.methods.createBarGraphData = function(table_data){
   return graph_data;
 }
 
+// creates pie graph data
+datasetSchema.methods.createPieGraphData = function(table_data){
+  var graph_data = {data: {labels: [], datasets: [{data: [], backgroundColor: []}]}, options: {responsive: true, legend: false}};
+
+  // add colors
+  var colors = palette('tol-rainbow', table_data.rows.length).map(function(hex) {
+    return '#' + hex;
+  });
+  graph_data.data.datasets[0].backgroundColor = colors;
+
+  // Create the graph data
+  var totals = [];
+  for(var i = 0, ii = table_data.rows.length; i < ii; i++){
+    var dataset = {};
+    // Create the graph labels
+    graph_data.data.labels.push(table_data.rows[i][0]);
+    var temp_row = table_data.rows[i].slice(1, table_data.rows[i].length).map(function(value){
+      return Number(value.replace('$', '').replace('%', '').replace(/,/g, ''));
+    });
+    totals.push(temp_row.reduce(function(a, b) { return a + b; }, 0))
+  }
+  graph_data.data.datasets[0].data = totals;
+  return graph_data;
+}
+
 // Build the Dataset models
 mongoose.model('Dataset', datasetSchema, collection);
 mongoose.model('SalesGrowth', datasetSchema, collection);
