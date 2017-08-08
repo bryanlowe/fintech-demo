@@ -1,3 +1,4 @@
+var palette = require('../utils/palette.js');
 var mongoose = require('mongoose');
 var model = mongoose.model('Dataset');
 
@@ -70,8 +71,16 @@ exports.getModelData = function(req, res){
         if (error) {
             res.send({result:'ERROR', message: error});
         } else {
+            // sort the model by time_frame
+            data.sort(function(a, b) {
+                a = new Date(a._id);
+                b = new Date(b._id);
+                return a - b;
+            });
             result = {};
             result['table_data'] = model.schema.methods.createDataTable(data, req.params);
+            result['line_graph_data'] = model.schema.methods.createLineGraphData(result['table_data']);
+            result['bar_graph_data'] = model.schema.methods.createBarGraphData(result['table_data']);
             res.json(result);
         }   
     });

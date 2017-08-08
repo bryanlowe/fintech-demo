@@ -98,6 +98,11 @@
           "datatables.net-responsive",
           "datatables.net-responsive-bs",
           "jquery",
+          {
+            "name": "chart.js",
+            "path": "../node_modules/chart.js/dist",
+            "main": "Chart.min.js"
+          },
           "aurelia-binding",
           "aurelia-bootstrapper",
           "aurelia-dependency-injection",

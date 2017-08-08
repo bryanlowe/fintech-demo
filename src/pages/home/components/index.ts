@@ -8,6 +8,7 @@ export class HomeLanding {
 	private self = this; // this object has to be saved in order to access class properties from callbacks
 	@bindable({ defaultBindingMode: bindingMode.twoWay }) page_state: any;
 	@bindable model: any = {table_data: {}};
+	@bindable graphData: any = {type: '', data: {labels: [], datasets: []}, options: {}};
 	@bindable tableData: any = {header: [], rows: []}; 
 	private subscribers: any[] = [];
 
@@ -41,6 +42,7 @@ export class HomeLanding {
 	 */
 	updatePageGraphType(graph_type){
 		this.page_state.graph_type = graph_type;
+		this.updateDataGraph();
 	}
 
 	/**
@@ -67,19 +69,37 @@ export class HomeLanding {
 	/**
 	 * Updates the DataTable data
 	 */
-	updateDataTable(){
+	private updateDataTable(){
 		this.tableData.header = this.model.table_data.header;
 		this.tableData.rows = this.model.table_data.rows;
 	}
 
 	/**
+	 * Updates the DataGraph data
+	 */
+	private updateDataGraph(){
+		if(this.page_state.graph_type === 'line'){
+			this.graphData.type = 'line';
+			this.graphData.options = this.model.line_graph_data.options;
+			this.graphData.data = this.model.line_graph_data.data;
+		} else if(this.page_state.graph_type === 'bar'){
+			this.graphData.type = 'bar';
+			this.graphData.options = this.model.bar_graph_data.options;
+			this.graphData.data = this.model.bar_graph_data.data;
+		}
+	}
+
+	/**
 	 * Fetches new data from the data model end point
 	 */
-	fetchModelData(class_obj){
+	private fetchModelData(class_obj){
 		return this.httpClient.fetch(this.page_state.model+'/'+this.page_state.time_frame+'/'+this.page_state.data_type+'/'+this.page_state.data_format)
 			.then(response => response.json())
 			.then(data => {class_obj.model = data})
-			.then(() => this.updateDataTable());
+			.then(() => {
+				this.updateDataGraph();
+				this.updateDataTable();
+			});
 	}
 
 	/**
@@ -94,8 +114,6 @@ export class HomeLanding {
       		.subscribe((newValue, oldValue) => this.fetchModelData(this)));
 		this.subscribers.push(this.bindingEngine.propertyObserver(this.page_state, 'data_format')
       		.subscribe((newValue, oldValue) => this.fetchModelData(this)));
-		//this.subscribers.push(this.bindingEngine.propertyObserver(this.page_state, 'graph_type')
-      	//	.subscribe((newValue, oldValue) => this.changeGraphModel()));
 	}
 
 	/**

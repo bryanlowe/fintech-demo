@@ -79,6 +79,7 @@ define('resources/index',["require", "exports"], function (require, exports) {
     Object.defineProperty(exports, "__esModule", { value: true });
     function configure(config) {
         config.globalResources([
+            './elements/market-view/data-graph-element',
             './elements/market-view/data-table-element',
         ]);
     }
@@ -243,6 +244,7 @@ define('pages/home/components/index',["require", "exports", "aurelia-fetch-clien
             this.bindingEngine = bindingEngine;
             this.self = this;
             this.model = { table_data: {} };
+            this.graphData = { type: '', data: { labels: [], datasets: [] }, options: {} };
             this.tableData = { header: [], rows: [] };
             this.subscribers = [];
             this.page_state = {
@@ -263,6 +265,7 @@ define('pages/home/components/index',["require", "exports", "aurelia-fetch-clien
         };
         HomeLanding.prototype.updatePageGraphType = function (graph_type) {
             this.page_state.graph_type = graph_type;
+            this.updateDataGraph();
         };
         HomeLanding.prototype.updatePageTimeFrame = function (time_frame) {
             this.page_state.time_frame = time_frame;
@@ -277,12 +280,27 @@ define('pages/home/components/index',["require", "exports", "aurelia-fetch-clien
             this.tableData.header = this.model.table_data.header;
             this.tableData.rows = this.model.table_data.rows;
         };
+        HomeLanding.prototype.updateDataGraph = function () {
+            if (this.page_state.graph_type === 'line') {
+                this.graphData.type = 'line';
+                this.graphData.options = this.model.line_graph_data.options;
+                this.graphData.data = this.model.line_graph_data.data;
+            }
+            else if (this.page_state.graph_type === 'bar') {
+                this.graphData.type = 'bar';
+                this.graphData.options = this.model.bar_graph_data.options;
+                this.graphData.data = this.model.bar_graph_data.data;
+            }
+        };
         HomeLanding.prototype.fetchModelData = function (class_obj) {
             var _this = this;
             return this.httpClient.fetch(this.page_state.model + '/' + this.page_state.time_frame + '/' + this.page_state.data_type + '/' + this.page_state.data_format)
                 .then(function (response) { return response.json(); })
                 .then(function (data) { class_obj.model = data; })
-                .then(function () { return _this.updateDataTable(); });
+                .then(function () {
+                _this.updateDataGraph();
+                _this.updateDataTable();
+            });
         };
         HomeLanding.prototype.setSubscribers = function () {
             var _this = this;
@@ -318,6 +336,10 @@ define('pages/home/components/index',["require", "exports", "aurelia-fetch-clien
         __decorate([
             aurelia_framework_1.bindable,
             __metadata("design:type", Object)
+        ], HomeLanding.prototype, "graphData", void 0);
+        __decorate([
+            aurelia_framework_1.bindable,
+            __metadata("design:type", Object)
         ], HomeLanding.prototype, "tableData", void 0);
         HomeLanding = __decorate([
             aurelia_framework_1.inject(aurelia_fetch_client_1.HttpClient, aurelia_binding_1.BindingEngine),
@@ -326,6 +348,57 @@ define('pages/home/components/index',["require", "exports", "aurelia-fetch-clien
         return HomeLanding;
     }());
     exports.HomeLanding = HomeLanding;
+});
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+define('resources/elements/market-view/data-graph-element',["require", "exports", "aurelia-framework", "aurelia-framework", "aurelia-binding", "jquery", "chart.js"], function (require, exports, aurelia_framework_1, aurelia_framework_2, aurelia_binding_1, $, Chart) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    var DataGraphElement = (function () {
+        function DataGraphElement(bindingEngine) {
+            this.bindingEngine = bindingEngine;
+            this.graphData = { type: '', data: { labels: [], datasets: [] }, options: {} };
+            this.subscription = null;
+        }
+        DataGraphElement.prototype.updateDataGraph = function () {
+            $('#chartjsGraph, .chartjs-hidden-iframe').remove();
+            $('#graph-container').append('<canvas id="chartjsGraph"></canvas>');
+            var context = $("#chartjsGraph")[0];
+            var chart = new Chart(context, {
+                type: this.graphData.type,
+                data: this.graphData.data,
+                options: this.graphData.options
+            });
+        };
+        DataGraphElement.prototype.attached = function () {
+            var _this = this;
+            this.subscription = this.bindingEngine.propertyObserver(this.graphData, 'data')
+                .subscribe(function (newValue, oldValue) { return _this.updateDataGraph(); });
+        };
+        DataGraphElement.prototype.detached = function () {
+            this.subscription.dispose();
+        };
+        __decorate([
+            aurelia_framework_2.bindable,
+            __metadata("design:type", Object)
+        ], DataGraphElement.prototype, "graphData", void 0);
+        DataGraphElement = __decorate([
+            aurelia_framework_1.customElement('data-graph'),
+            aurelia_framework_2.useView('./data-graph-element.html'),
+            aurelia_framework_2.inject(aurelia_binding_1.BindingEngine),
+            __metadata("design:paramtypes", [aurelia_binding_1.BindingEngine])
+        ], DataGraphElement);
+        return DataGraphElement;
+    }());
+    exports.DataGraphElement = DataGraphElement;
 });
 
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
@@ -408,6 +481,7 @@ define('text!less/mixins.css', ['module'], function(module) { module.exports = "
 define('text!less/variables.css', ['module'], function(module) { module.exports = ""; });
 define('text!pages/page-elements/site-footer.html', ['module'], function(module) { module.exports = "<template>  \r\n  <!-- footer content -->\r\n        <footer>\r\n          <div class=\"pull-right\">\r\n            Gentelella - Bootstrap Admin Template by <a href=\"https://colorlib.com\">Colorlib</a>\r\n          </div>\r\n          <div class=\"clearfix\"></div>\r\n        </footer>\r\n        <!-- /footer content -->\r\n</template>"; });
 define('text!pages/page-elements/topbar-menu.html', ['module'], function(module) { module.exports = "<template>\r\n  <!-- top navigation -->\r\n        <div class=\"top_nav\">\r\n            <div class=\"nav_menu\">\r\n                <nav>\r\n                \r\n                <ul class=\"nav navbar-nav navbar-right\">\r\n                    <li class=\"\">\r\n                    <a href=\"javascript:;\" class=\"user-profile dropdown-toggle\" data-toggle=\"dropdown\" aria-expanded=\"false\">\r\n                        <img src=\"src/img/img.jpg\" alt=\"\">John Doe\r\n                        <span class=\" fa fa-angle-down\"></span>\r\n                    </a>\r\n                    <ul class=\"dropdown-menu dropdown-usermenu pull-right\">\r\n                        <li><a href=\"javascript:;\"> Profile</a></li>\r\n                        <li>\r\n                        <a href=\"javascript:;\">\r\n                            <span class=\"badge bg-red pull-right\">50%</span>\r\n                            <span>Settings</span>\r\n                        </a>\r\n                        </li>\r\n                        <li><a href=\"javascript:;\">Help</a></li>\r\n                        <li><a href=\"login.html\"><i class=\"fa fa-sign-out pull-right\"></i> Log Out</a></li>\r\n                    </ul>\r\n                    </li>\r\n\r\n                    <li role=\"presentation\" class=\"dropdown\">\r\n                    <a href=\"javascript:;\" class=\"dropdown-toggle info-number\" data-toggle=\"dropdown\" aria-expanded=\"false\">\r\n                        <i class=\"fa fa-envelope-o\"></i>\r\n                        <span class=\"badge bg-green\">6</span>\r\n                    </a>\r\n                    <ul id=\"menu1\" class=\"dropdown-menu list-unstyled msg_list\" role=\"menu\">\r\n                        <li>\r\n                        <a>\r\n                            <span class=\"image\"><img src=\"src/img/img.jpg\" alt=\"Profile Image\" /></span>\r\n                            <span>\r\n                            <span>John Smith</span>\r\n                            <span class=\"time\">3 mins ago</span>\r\n                            </span>\r\n                            <span class=\"message\">\r\n                            Film festivals used to be do-or-die moments for movie makers. They were where...\r\n                            </span>\r\n                        </a>\r\n                        </li>\r\n                        <li>\r\n                        <a>\r\n                            <span class=\"image\"><img src=\"src/img/img.jpg\" alt=\"Profile Image\" /></span>\r\n                            <span>\r\n                            <span>John Smith</span>\r\n                            <span class=\"time\">3 mins ago</span>\r\n                            </span>\r\n                            <span class=\"message\">\r\n                            Film festivals used to be do-or-die moments for movie makers. They were where...\r\n                            </span>\r\n                        </a>\r\n                        </li>\r\n                        <li>\r\n                        <a>\r\n                            <span class=\"image\"><img src=\"src/img/img.jpg\" alt=\"Profile Image\" /></span>\r\n                            <span>\r\n                            <span>John Smith</span>\r\n                            <span class=\"time\">3 mins ago</span>\r\n                            </span>\r\n                            <span class=\"message\">\r\n                            Film festivals used to be do-or-die moments for movie makers. They were where...\r\n                            </span>\r\n                        </a>\r\n                        </li>\r\n                        <li>\r\n                        <a>\r\n                            <span class=\"image\"><img src=\"src/img/img.jpg\" alt=\"Profile Image\" /></span>\r\n                            <span>\r\n                            <span>John Smith</span>\r\n                            <span class=\"time\">3 mins ago</span>\r\n                            </span>\r\n                            <span class=\"message\">\r\n                            Film festivals used to be do-or-die moments for movie makers. They were where...\r\n                            </span>\r\n                        </a>\r\n                        </li>\r\n                        <li>\r\n                        <div class=\"text-center\">\r\n                            <a>\r\n                            <strong>See All Alerts</strong>\r\n                            <i class=\"fa fa-angle-right\"></i>\r\n                            </a>\r\n                        </div>\r\n                        </li>\r\n                    </ul>\r\n                    </li>\r\n                </ul>\r\n                </nav>\r\n            </div>\r\n            </div>\r\n            <!-- /top navigation -->        \r\n</template>"; });
-define('text!pages/home/components/index.html', ['module'], function(module) { module.exports = "<template>\r\n    <div class=\"right_col\" role=\"main\">\r\n        <div class=\"col-md-12\">\r\n        \t<!-- button panel -->\r\n            <div class=\"text-center mtop20\">\r\n                <h2>Data Model</h2>\r\n                <button click.trigger=\"updatePageModel('brandshare')\" id=\"brand_share_btn\" class=\"btn btn-lg btn-primary\">Brand Share</button>\r\n                <button click.trigger=\"updatePageModel('salesgrowth')\" href=\"#\" id=\"sales_growth_btn\" class=\"btn btn-lg btn-primary\">Sales Growth</button>\r\n                <button click.trigger=\"updatePageModel('industry')\" href=\"#\" id=\"industry_btn\" class=\"btn btn-lg btn-primary\">Industry</button>\r\n                <button click.trigger=\"updatePageModel('producttrends')\" href=\"#\" id=\"product_trends_btn\" class=\"btn btn-lg btn-primary\">Product Trends</button>\r\n                <button click.trigger=\"updatePageModel('pricing')\" href=\"#\" id=\"pricing_btn\" class=\"btn btn-lg btn-primary\">Pricing</button>\r\n            </div>\r\n        </div>\r\n\r\n        <div class=\"col-md-12 row\">\r\n            <div class=\"text-center col-md-2\">\r\n                <!-- button panel -->\r\n                <h2>Graph Type</h2>\r\n                <div class=\"btn-group-vertical\">\r\n                    <button click.trigger=\"updatePageGraphType('line')\" class=\"btn btn-lg btn-primary\">Line Graph</button>\r\n                    <button click.trigger=\"updatePageGraphType('bar')\" class=\"btn btn-lg btn-primary\">Bar Graph</button>\r\n                    <button click.trigger=\"updatePageGraphType('pie')\" class=\"btn btn-lg btn-primary\">Pie Graph</button>\r\n                </div>\r\n                <div class=\"clear\"></div><br /><br />\r\n                <h2>Time Frame</h2>\r\n                <div class=\"btn-group-vertical\">\r\n                    <button click.trigger=\"updatePageTimeFrame('week')\" class=\"btn btn-lg btn-primary\">Weeks</button>\r\n                    <button click.trigger=\"updatePageTimeFrame('month')\" class=\"btn btn-lg btn-primary\">Months</button>\r\n                    <button click.trigger=\"updatePageTimeFrame('year')\" class=\"btn btn-lg btn-primary\">Years</button>\r\n                </div>\r\n                <div class=\"clear\"></div><br /><br />\r\n                <h2>Data Type</h2>\r\n                <div class=\"btn-group-vertical\">\r\n                    <button click.trigger=\"updatePageDataType('units')\" class=\"btn btn-lg btn-primary\">Units</button>\r\n                    <button click.trigger=\"updatePageDataType('revenue')\" class=\"btn btn-lg btn-primary\">Revenue</button>\r\n                </div>\r\n                <div class=\"clear\"></div><br /><br />\r\n                <h2>Data Format</h2>\r\n                <div class=\"btn-group-vertical\">\r\n                    <button click.trigger=\"updatePageDataFormat('whole')\" class=\"btn btn-lg btn-primary\">Whole Numbers</button>\r\n                    <button click.trigger=\"updatePageDataFormat('percentage')\" class=\"btn btn-lg btn-primary\">Percentages</button>\r\n                </div>\r\n            </div>\r\n            <div class=\"col-md-10\">\r\n                <!-- market view panel -->\r\n                <div id=\"market_view\" class=\"row\">\r\n                    <div class=\"col-md-12 col-sm-12 col-xs-12\">\r\n                        <div class=\"x_panel\">\r\n                            <div class=\"x_title\">\r\n                                <h2 id=\"view_title\">Market View</h2>\r\n                                <div class=\"clearfix\"></div>\r\n                            </div>\r\n                            <div class=\"x_content\">\r\n                                <!-- Interactive Chart -->\r\n                                <div id=\"market_view_chart\">\r\n                                    <div class=\"x_panel\">\r\n                                        <div id=\"graph-container\" class=\"x_content\">\r\n                                            <canvas id=\"lineChart\" style=\"display: none\"></canvas>\r\n                                            <canvas id=\"barChart\" style=\"display: none\"></canvas>\r\n                                            <canvas id=\"pieChart\" style=\"display: none\"></canvas>\r\n                                        </div>\r\n                                    </div>\r\n                                </div>\r\n\r\n                                <!-- Interactive Table -->\r\n                                <div id=\"market_view_table\">\r\n                                    <div class=\"x_panel\">\r\n                                        <div id=\"datatable-container\" class=\"x_content\">\r\n                                            <data-table table-data.bind=\"tableData\"></data-table>\r\n                                        </div>\r\n                                    </div>\r\n                                </div>\r\n                            </div>\r\n                        </div>\r\n                    </div>\r\n                </div>\r\n            </div>\r\n        </div>  \r\n    </div>\r\n</template>"; });
-define('text!resources/elements/market-view/data-table-element.html', ['module'], function(module) { module.exports = "<template>\r\n\t<table id=\"datatable-responsive\" class=\"table table-striped table-bordered dt-responsive nowrap\" cellspacing=\"0\" width=\"100%\"></table>\r\n</template>"; });
+define('text!pages/home/components/index.html', ['module'], function(module) { module.exports = "<template>\r\n    <div class=\"right_col\" role=\"main\">\r\n        <div class=\"col-md-12\">\r\n        \t<!-- button panel -->\r\n            <div class=\"text-center mtop20\">\r\n                <h2>Data Model</h2>\r\n                <button click.trigger=\"updatePageModel('brandshare')\" id=\"brand_share_btn\" class=\"btn btn-lg btn-primary\">Brand Share</button>\r\n                <button click.trigger=\"updatePageModel('salesgrowth')\" href=\"#\" id=\"sales_growth_btn\" class=\"btn btn-lg btn-primary\">Sales Growth</button>\r\n                <button click.trigger=\"updatePageModel('industry')\" href=\"#\" id=\"industry_btn\" class=\"btn btn-lg btn-primary\">Industry</button>\r\n                <button click.trigger=\"updatePageModel('producttrends')\" href=\"#\" id=\"product_trends_btn\" class=\"btn btn-lg btn-primary\">Product Trends</button>\r\n                <button click.trigger=\"updatePageModel('pricing')\" href=\"#\" id=\"pricing_btn\" class=\"btn btn-lg btn-primary\">Pricing</button>\r\n            </div>\r\n        </div>\r\n\r\n        <div class=\"col-md-12 row\">\r\n            <div class=\"text-center col-md-2\">\r\n                <!-- button panel -->\r\n                <h2>Graph Type</h2>\r\n                <div class=\"btn-group-vertical\">\r\n                    <button click.trigger=\"updatePageGraphType('line')\" class=\"btn btn-lg btn-primary\">Line Graph</button>\r\n                    <button click.trigger=\"updatePageGraphType('bar')\" class=\"btn btn-lg btn-primary\">Bar Graph</button>\r\n                    <button click.trigger=\"updatePageGraphType('pie')\" class=\"btn btn-lg btn-primary\">Pie Graph</button>\r\n                </div>\r\n                <div class=\"clear\"></div><br /><br />\r\n                <h2>Time Frame</h2>\r\n                <div class=\"btn-group-vertical\">\r\n                    <button click.trigger=\"updatePageTimeFrame('week')\" class=\"btn btn-lg btn-primary\">Weeks</button>\r\n                    <button click.trigger=\"updatePageTimeFrame('month')\" class=\"btn btn-lg btn-primary\">Months</button>\r\n                    <button click.trigger=\"updatePageTimeFrame('year')\" class=\"btn btn-lg btn-primary\">Years</button>\r\n                </div>\r\n                <div class=\"clear\"></div><br /><br />\r\n                <h2>Data Type</h2>\r\n                <div class=\"btn-group-vertical\">\r\n                    <button click.trigger=\"updatePageDataType('units')\" class=\"btn btn-lg btn-primary\">Units</button>\r\n                    <button click.trigger=\"updatePageDataType('revenue')\" class=\"btn btn-lg btn-primary\">Revenue</button>\r\n                </div>\r\n                <div class=\"clear\"></div><br /><br />\r\n                <h2>Data Format</h2>\r\n                <div class=\"btn-group-vertical\">\r\n                    <button click.trigger=\"updatePageDataFormat('whole')\" class=\"btn btn-lg btn-primary\">Whole Numbers</button>\r\n                    <button click.trigger=\"updatePageDataFormat('percentage')\" class=\"btn btn-lg btn-primary\">Percentages</button>\r\n                </div>\r\n            </div>\r\n            <div class=\"col-md-10\">\r\n                <!-- market view panel -->\r\n                <div id=\"market_view\" class=\"row\">\r\n                    <div class=\"col-md-12 col-sm-12 col-xs-12\">\r\n                        <div class=\"x_panel\">\r\n                            <div class=\"x_title\">\r\n                                <h2 id=\"view_title\">Market View</h2>\r\n                                <div class=\"clearfix\"></div>\r\n                            </div>\r\n                            <div class=\"x_content\">\r\n                                <!-- Interactive Chart -->\r\n                                <div id=\"market_view_chart\">\r\n                                    <div class=\"x_panel\">\r\n                                        <div class=\"x_content\">\r\n                                            <data-graph graph-data.bind=\"graphData\"></data-graph>\r\n                                        </div>\r\n                                    </div>\r\n                                </div>\r\n\r\n                                <!-- Interactive Table -->\r\n                                <div id=\"market_view_table\">\r\n                                    <div class=\"x_panel\">\r\n                                        <div class=\"x_content\">\r\n                                            <data-table table-data.bind=\"tableData\"></data-table>\r\n                                        </div>\r\n                                    </div>\r\n                                </div>\r\n                            </div>\r\n                        </div>\r\n                    </div>\r\n                </div>\r\n            </div>\r\n        </div>  \r\n    </div>\r\n</template>"; });
+define('text!resources/elements/market-view/data-graph-element.html', ['module'], function(module) { module.exports = "<template>\r\n\t<div id=\"graph-container\">\r\n\t\t<canvas id=\"chartjsGraph\"></canvas>\r\n\t</div>\r\n</template>"; });
+define('text!resources/elements/market-view/data-table-element.html', ['module'], function(module) { module.exports = "<template>\r\n\t<div id=\"datatable-container\">\r\n\t\t<table id=\"datatable-responsive\" class=\"table table-striped table-bordered dt-responsive nowrap\" cellspacing=\"0\" width=\"100%\"></table>\r\n\t</div>\r\n</template>"; });
 //# sourceMappingURL=app-bundle.js.map

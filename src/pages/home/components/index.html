@@ -54,10 +54,8 @@
                                 <!-- Interactive Chart -->
                                 <div id="market_view_chart">
                                     <div class="x_panel">
-                                        <div id="graph-container" class="x_content">
-                                            <canvas id="lineChart" style="display: none"></canvas>
-                                            <canvas id="barChart" style="display: none"></canvas>
-                                            <canvas id="pieChart" style="display: none"></canvas>
+                                        <div class="x_content">
+                                            <data-graph graph-data.bind="graphData"></data-graph>
                                         </div>
                                     </div>
                                 </div>
@@ -65,7 +63,7 @@
                                 <!-- Interactive Table -->
                                 <div id="market_view_table">
                                     <div class="x_panel">
-                                        <div id="datatable-container" class="x_content">
+                                        <div class="x_content">
                                             <data-table table-data.bind="tableData"></data-table>
                                         </div>
                                     </div>
