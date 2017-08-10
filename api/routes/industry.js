@@ -1,6 +1,6 @@
 var palette = require('../utils/palette.js');
 var mongoose = require('mongoose');
-var model = mongoose.model('Dataset');
+var model = mongoose.model('Industry');
 
 model.schema.methods.createAggregate = function(time_frame){
 	var result = [
