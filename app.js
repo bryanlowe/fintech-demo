@@ -5,7 +5,7 @@ var express = require('express'),
     brand_share = require('./api/routes/brand_share'),
     sales_growth = require('./api/routes/sales_growth'),
     industry = require('./api/routes/industry'),
-    product_trends = require('./api/routes/product_trends'),
+    ranking = require('./api/routes/ranking'),
     pricing = require('./api/routes/pricing');
 
 var app = express();
@@ -27,8 +27,8 @@ app.get('/salesgrowth/:time_frame/:data_type/:data_format/:brand?', sales_growth
 // industry routes
 app.get('/industry/:time_frame/:data_type/:data_format/:brand', industry.getModelData); // aggregates industry data
 
-// product trends routes
-app.get('/producttrends/:time_frame/:data_type/:data_format/:brand?', product_trends.getModelData); // aggregates product trends data
+// rankings routes
+app.get('/ranking/:time_frame/:data_type/:data_format/:brand?', ranking.getModelData); // aggregates rankings data
 
 // pricing routes
 app.get('/pricing/:time_frame/:data_type/:data_format/:brand?', pricing.getModelData); // aggregates pricing data

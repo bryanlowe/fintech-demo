@@ -74,7 +74,7 @@ mongoose.model('Industry', (new mongoose.Schema({
   product: [productSchema], // array of products
   sale_statement: [saleStatementSchema] // array of sale statements
 })), collection);
-mongoose.model('ProductTrends', (new mongoose.Schema({
+mongoose.model('Ranking', (new mongoose.Schema({
   brand: String,
   product: [productSchema], // array of products
   sale_statement: [saleStatementSchema] // array of sale statements

@@ -32,14 +32,14 @@ model.schema.methods.createAggregate = function(time_frame){
         	'$group': {
         		'_id': {
         			'brand': '$brand', 
-                    'model': '$product.spec_value',
+              'model': '$product.spec_value',
         			'time_frame': '$sale_statement.time_frame.'+time_frame+'_start'
         		}, 
     			'units': {
-    				'$avg': '$sale_statement.units'
+    				'$sum': '$sale_statement.units'
     			},
     			'revenue': {
-    				'$avg': '$sale_statement.revenue'
+    				'$sum': '$sale_statement.revenue'
     			}
         	}
         },
