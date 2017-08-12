@@ -82,10 +82,8 @@ model.schema.methods.createDataTable = function(model_data, options){
       data[data_entry.brand] = data[data_entry.brand] || [];
       if(options.data_type === 'revenue'){
         result = data_entry.revenue;
-        //result = ((options.data_format === 'whole') ? data_entry.revenue : (data_entry.revenue / sale_statement.revenue_total * 100)).toFixed(2).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
       } else {
         result = data_entry.units;
-        //result = ((options.data_format === 'whole') ? data_entry.units : (data_entry.units / sale_statement.unit_total * 100)).toFixed(2).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");;    
       }
       data[data_entry.brand].push(result);
     });
@@ -99,7 +97,7 @@ model.schema.methods.createDataTable = function(model_data, options){
     var diff = [];
     diff.push('--');
     for (var i = 1, ii = data[key].length; i < ii; i++){
-        var result = ((options.data_format === 'whole') ? Number(data[key][i]) - Number(data[key][i - 1]) : ((Number(data[key][i]) - Number(data[key][i - 1])) / Number(data[key][i]) * 100));
+        var result = ((options.data_format === 'whole') ? Number(data[key][i]) - Number(data[key][i - 1]) : ((Number(data[key][i]) - Number(data[key][i - 1])) / Number(data[key][i - 1]) * 100));
         if(isNaN(result)){
             result = '0.00';
         } else if(result.toString().match('-Infinity')){
