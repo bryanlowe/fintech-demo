@@ -100,8 +100,8 @@ model.schema.methods.createDataTable = function(model_data, options){
         var result = ((options.data_format === 'whole') ? Number(data[key][i]) - Number(data[key][i - 1]) : ((Number(data[key][i]) - Number(data[key][i - 1])) / Number(data[key][i - 1]) * 100));
         if(isNaN(result)){
             result = '0.00';
-        } else if(result.toString().match('-Infinity')){
-            result = '-100.00';
+        } else if(result.toString().match('Infinity')){
+            result = result.replace('Infinity','100.00');
         } else {
             result = result.toFixed(2).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
         }
