@@ -42,9 +42,9 @@ model.schema.methods.createAggregate = function(time_frame){
         		'doc': {
         			'brand': '$_id.brand',
 	        		'units': '$units',
-	    			'revenue': '$revenue'
+	    			  'revenue': '$revenue'
         		},
-                'time_frame': '$_id.time_frame'
+            'time_frame': '$_id.time_frame'
         	}
         },
         {	
