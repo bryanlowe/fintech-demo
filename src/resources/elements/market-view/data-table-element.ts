@@ -29,7 +29,7 @@ export class DataTableElement {
    */
   private constructHeader(){
     // create headers
-    var thead = '<thead><tr><th>Brand</th>';
+    var thead = '<thead><tr>';
     for(var i = 0, ii = this.tableData.header.length; i < ii; i++){
         thead += '<th>' + this.tableData.header[i] + '</th>';
     }

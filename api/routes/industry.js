@@ -84,7 +84,7 @@ model.schema.methods.createDataTable = function(model_data, options){
         result = ((options.data_format === 'whole') ? data_entry.revenue : (data_entry.revenue / sale_statement.revenue_total * 100)).toFixed(2).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
         if(options.data_format === 'whole'){ result = '$' + result; }
       } else {
-        result = ((options.data_format === 'whole') ? data_entry.units : (data_entry.units / sale_statement.unit_total * 100)).toFixed(2).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");;    
+        result = ((options.data_format === 'whole') ? data_entry.units : (data_entry.units / sale_statement.unit_total * 100)).toFixed(2).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");   
       }
       if(options.data_format !== 'whole'){ result += '%'; }
       data[data_entry.brand].push(result);
@@ -193,6 +193,7 @@ exports.getModelData = function(req, res){
             result['line_graph_data'] = model.schema.methods.createLineGraphData(result['table_data']);
             result['bar_graph_data'] = model.schema.methods.createBarGraphData(result['table_data']);
             result['pie_graph_data'] = model.schema.methods.createPieGraphData(result['table_data']);
+            result['table_data']['header'] = ['Brand'].concat(result['table_data']['header']);
             res.json(result);
         }   
     });

@@ -441,7 +441,7 @@ define('resources/elements/market-view/data-table-element',["require", "exports"
             this.constructDataRows();
         };
         DataTableElement.prototype.constructHeader = function () {
-            var thead = '<thead><tr><th>Brand</th>';
+            var thead = '<thead><tr>';
             for (var i = 0, ii = this.tableData.header.length; i < ii; i++) {
                 thead += '<th>' + this.tableData.header[i] + '</th>';
             }
