@@ -19,7 +19,8 @@ export class HomeLanding {
 			time_frame: 'week',
 			data_type: 'revenue',
 			data_format: 'whole',
-			graph_type: 'line'
+			graph_type: 'line',
+			company: 'Canon'
 		};
 
 		// set httpClient
@@ -67,6 +68,13 @@ export class HomeLanding {
 	}
 
 	/**
+	 * Update the page state's company
+	 */
+	updatePageCompany(company){
+		this.page_state.company = company;
+	}
+
+	/**
 	 * Updates the DataTable data
 	 */
 	private updateDataTable(){
@@ -97,7 +105,7 @@ export class HomeLanding {
 	 * Fetches new data from the data model end point
 	 */
 	private fetchModelData(class_obj){
-		return this.httpClient.fetch(this.page_state.model+'/'+this.page_state.time_frame+'/'+this.page_state.data_type+'/'+this.page_state.data_format)
+		return this.httpClient.fetch(this.page_state.model+'/'+this.page_state.time_frame+'/'+this.page_state.data_type+'/'+this.page_state.data_format+'/'+this.page_state.company)
 			.then(response => response.json())
 			.then(data => {class_obj.model = data})
 			.then(() => {
@@ -117,6 +125,8 @@ export class HomeLanding {
 		this.subscribers.push(this.bindingEngine.propertyObserver(this.page_state, 'data_type')
       		.subscribe((newValue, oldValue) => this.fetchModelData(this)));
 		this.subscribers.push(this.bindingEngine.propertyObserver(this.page_state, 'data_format')
+      		.subscribe((newValue, oldValue) => this.fetchModelData(this)));
+		this.subscribers.push(this.bindingEngine.propertyObserver(this.page_state, 'company')
       		.subscribe((newValue, oldValue) => this.fetchModelData(this)));
 	}
 

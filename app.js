@@ -19,13 +19,13 @@ app.use(express.static(__dirname + '/'));
 app.get('/', routes.index);
 
 // brandshare routes
-app.get('/brandshare/:time_frame/:data_type/:data_format', brand_share.getModelData); // aggregates brand share data
+app.get('/brandshare/:time_frame/:data_type/:data_format/:brand?', brand_share.getModelData); // aggregates brand share data
 
 // sales growth routes
 app.get('/salesgrowth/:time_frame/:data_type/:data_format', sales_growth.getModelData); // aggregates sales growth data
 
 // industry routes
-app.get('/industry/:time_frame/:data_type/:data_format', industry.getModelData); // aggregates industry data
+app.get('/industry/:time_frame/:data_type/:data_format/:brand', industry.getModelData); // aggregates industry data
 
 // product trends routes
 app.get('/producttrends/:time_frame/:data_type/:data_format', product_trends.getModelData); // aggregates product trends data
