@@ -101,7 +101,7 @@ model.schema.methods.createDataTable = function(model_data, options){
         if(isNaN(result)){
             result = '0.00';
         } else if(result.toString().match('Infinity')){
-            result = result.replace('Infinity','100.00');
+            result = result.toString().replace('Infinity','100.00');
         } else {
             result = result.toFixed(2).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
         }
