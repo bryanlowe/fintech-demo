@@ -4,98 +4,106 @@ var model = mongoose.model('BrandShare');
 
 model.schema.methods.createAggregate = function(time_frame){
 	var result = [
-  		{
-  			'$unwind': '$sale_statement'
-  		},
-        { 
-            '$project': { 
-                '_id': 0, 
-                'brand': 1,
-                'sale_statement.units': 1,
-                'sale_statement.revenue': 1,
-                'sale_statement.time_frame.week_start': 1,
-                'sale_statement.time_frame.month_start': 1,
-                'sale_statement.time_frame.year_start': 1
-            }
+		{
+			'$unwind': '$sale_statement'
+		},
+    { 
+      '$project': { 
+        '_id': 0, 
+        'brand': 1,
+        'sale_statement.units': 1,
+        'sale_statement.revenue': 1,
+        'sale_statement.time_frame.week_start': 1,
+        'sale_statement.time_frame.month_start': 1,
+        'sale_statement.time_frame.year_start': 1,
+        'sale_statement.time_frame.iso_date': 1,
+        'product': 1
+      }
+    },
+    {   
+      '$group': {
+        '_id': {
+          'brand': '$brand', 
+          'time_frame': '$sale_statement.time_frame.'+time_frame+'_start',
+          'product': '$product',
+        }, 
+        'units': {
+          '$sum': '$sale_statement.units'
         },
-        {	
-        	'$group': {
-        		'_id': {
-        			'brand': '$brand', 
-        			'time_frame': '$sale_statement.time_frame.'+time_frame+'_start'
-        		}, 
-    			'units': {
-    				'$sum': '$sale_statement.units'
-    			},
-    			'revenue': {
-    				'$sum': '$sale_statement.revenue'
-    			}
-        	}
+        'revenue': {
+          '$sum': '$sale_statement.revenue'
         },
-        {
-        	'$sort': {
-        		'_id.brand': 1
-        	}
-        },
-        {
-        	'$project': {
-        		'doc': {
-        			'brand': '$_id.brand',
-	        		'units': '$units',
-	    			  'revenue': '$revenue'
-        		},
-            'time_frame': '$_id.time_frame'
-        	}
-        },
-        {	
-        	'$group':{
-        		'_id': '$time_frame',
-        		'unit_total': {
-        			'$sum': '$doc.units'
-        		},
-        		'revenue_total': {
-        			'$sum': '$doc.revenue'
-        		},
-        		'dataset':{
-        			'$push': '$doc'
-        		}
-        	}
+        'last_sale_date': { 
+          '$last': "$sale_statement.time_frame.iso_date" 
         }
-    ];
+      }
+    },
+    {
+      '$sort': {
+        '_id.brand': 1
+      }
+    },
+    {
+      '$project': {
+        'doc': {
+          'brand': '$_id.brand',
+          'time_frame': '$_id.time_frame',
+          'product': '$_id.product',
+          'units': '$units',
+          'revenue': '$revenue',
+          'last_sale_date': '$last_sale_date'
+        }
+      }
+    },
+    { 
+      '$group':{
+        '_id': '$doc.last_sale_date',
+        'unit_total': {
+          '$sum': '$doc.units'
+        },
+        'revenue_total': {
+          '$sum': '$doc.revenue'
+        },
+        'dataset':{
+          '$push': '$doc'
+        }
+      }
+    },
+    {
+      '$sort': {
+        '_id': 1
+      }
+    }
+  ];
 	return result;
 }
 
 // create table data function
-model.schema.methods.createDataTable = function(model_data, options){
-  var table_data = {header: [], rows: []};
+model.schema.methods.createDataTable = function(model_data){
+  let table_data = {dataArray: [], rows: ['Brand'], columns: ['Date'], aggregationDimension: 'Revenue', aggregator: 'sum', rowHeader: 'Brand'};
 
-  // Create the table header
-  table_data.header = model_data.map(function(obj){
-    return obj._id;
+  // Create the table input
+  let tempArray = model_data.map(function(obj){
+    return obj.dataset;
   });
-
-  // Create the table data
-  var data = {};
-  model_data.forEach(function(sale_statement){
-    sale_statement.dataset.forEach(function(data_entry){
-      var result = '0.00';
-      data[data_entry.brand] = data[data_entry.brand] || [];
-      if(options.data_type === 'revenue'){
-        result = ((options.data_format === 'whole') ? data_entry.revenue : (data_entry.revenue / sale_statement.revenue_total * 100)).toFixed(2).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-        if(options.data_format === 'whole'){ result = '$' + result; }
-      } else {
-        result = ((options.data_format === 'whole') ? data_entry.units : (data_entry.units / sale_statement.unit_total * 100)).toFixed(2).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");    
-      }
-      if(options.data_format !== 'whole'){ result += '%'; }
-      data[data_entry.brand].push(result);
-    });
+  tempArray = [].concat.apply([], tempArray);
+  table_data.dataArray = tempArray.map(function(obj){
+    let result = {};
+    result['Brand'] = obj.brand;
+    result['Date'] = obj.time_frame;
+    result['Units'] = obj.units;
+    result['Revenue'] = obj.revenue;
+    for(let i = 0, ii = obj.product.length; i < ii; i++){
+      result[obj.product[i].spec_type] = obj.product[i].spec_value;
+    }
+    return result;
   });
-
-  // append the brand before the number set
-  for(var key in data){
-    var temp = [key];
-    table_data['rows'].push(temp.concat(data[key]));
-  }
+  
+  table_data.options = {
+    rows: ['Brand'],
+    cols: ['Date'],
+    vals: ['Units']
+  };
   return table_data;
 }
 
@@ -182,19 +190,7 @@ exports.getModelData = function(req, res){
         if (error) {
             res.send({result:'ERROR', message: error});
         } else {
-            // sort the model by time_frame
-            data.sort(function(a, b) {
-                a = new Date(a._id);
-                b = new Date(b._id);
-                return a - b;
-            });
-            result = {};
-            result['table_data'] = model.schema.methods.createDataTable(data, req.params);
-            result['line_graph_data'] = model.schema.methods.createLineGraphData(result['table_data']);
-            result['bar_graph_data'] = model.schema.methods.createBarGraphData(result['table_data']);
-            result['pie_graph_data'] = model.schema.methods.createPieGraphData(result['table_data']);
-            result['table_data']['header'] = ['Brand'].concat(result['table_data']['header']);
-            res.json(result);
+            res.json(data);
         }   
     });
 }

@@ -70,7 +70,7 @@
             ".html",
             ".css"
           ],
-          "stub": true
+          "stub": false
         }
       ]
     },
@@ -93,6 +93,7 @@
           "node_modules/requirejs/require.js"
         ],
         "dependencies": [
+          "quick-pivot",
           "datatables.net",
           "datatables.net-bs",
           "datatables.net-responsive",
@@ -102,6 +103,19 @@
             "name": "chart.js",
             "path": "../node_modules/chart.js/dist",
             "main": "Chart.min.js"
+          },
+          {
+            "name": "pivottable",
+            "path": "../node_modules/pivottable/dist",
+            "main": "pivot.min.js",
+            "resources": [
+              "pivot.min.css"
+            ]
+          },
+          {
+            "name": "pivot",
+            "path": "../scripts/vendors/pivot",
+            "main": "pivot.min.js"
           },
           "aurelia-binding",
           "aurelia-bootstrapper",

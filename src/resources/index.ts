@@ -5,5 +5,6 @@ export function configure(config: FrameworkConfiguration) {
   	// elements
   	'./elements/market-view/data-graph-element',
   	'./elements/market-view/data-table-element',
+  	'./elements/market-view/pivot-table-element',
   ]);
 }

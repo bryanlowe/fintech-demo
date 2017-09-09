@@ -61,6 +61,12 @@
                               <li class="revenueCtrl"><a id="revenuePercentBtn" href="javascript:void()" click.trigger="updatePageDataFormat('percentage')">Percentage</a></li>
                           </ul>
                       </li>
+                      <li><a id="experimentli" click.delegate="anchorClicked($event)"><i class="fa fa-percent"></i> Experimentation <span class="fa fa-chevron-down"></span></a>
+                          <ul class="nav child_menu">
+                              <li class="unitsCtrl"><a id="unitsPercentBtn" href="javascript:void()" click.trigger="updateExperiment(true)">Dataset 1</a></li>
+                              <li class="revenueCtrl"><a id="revenuePercentBtn" href="javascript:void()" click.trigger="updateExperiment(false)">Dataset 2</a></li>
+                          </ul>
+                      </li>
                   </ul>
               </div>
             </div>
