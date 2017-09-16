@@ -93,11 +93,90 @@
           "node_modules/requirejs/require.js"
         ],
         "dependencies": [
-          "quick-pivot",
+          {
+            "name": "datatables.net-bs",
+            "path": "../node_modules/datatables.net-bs",
+            "main": "node_modules/datatables.net/js/jquery.dataTables.js",
+            "resources": ["css/dataTables.bootstrap.css"]
+          },
           "datatables.net",
           "datatables.net-bs",
+          "datatables.net-buttons",
+          "datatables.net-buttons-bs",
+          {
+            "name": "dt-colvis-btn",
+            "path": "../node_modules/datatables.net-buttons/js",
+            "main": "buttons.colVis.js",
+            "deps": ["datatables.net-buttons-bs"]
+          },
+          {
+            "name": "dt-flash-btn",
+            "path": "../node_modules/datatables.net-buttons/js",
+            "main": "buttons.flash.js",
+            "deps": ["datatables.net-buttons-bs"]
+          },
+          {
+            "name": "dt-html5-btn",
+            "path": "../node_modules/datatables.net-buttons/js",
+            "main": "buttons.html5.js",
+            "deps": ["datatables.net-buttons-bs"]
+          },
+          {
+            "name": "dt-print-btn",
+            "path": "../node_modules/datatables.net-buttons/js",
+            "main": "buttons.print.js",
+            "deps": ["datatables.net-buttons-bs"]
+          },
+          {
+            "name": "datatables.net-fixedcolumns-bs",
+            "path": "../node_modules/datatables.net-fixedcolumns-bs",
+            "main": "node_modules/datatables.net-fixedcolumns/js/dataTables.fixedColumns.min.js",
+            "resources": ["css/fixedColumns.bootstrap.min.css"]
+          },
+          {
+            "name": "datatables.net-fixedheader-bs",
+            "path": "../node_modules/datatables.net-fixedheader-bs",
+            "main": "node_modules/datatables.net-fixedheader/js/dataTables.fixedHeader.min.js",
+            "resources": ["css/fixedHeader.bootstrap.min.css"]
+          },
+          {
+            "name": "datatables.net-keytable-bs",
+            "path": "../node_modules/datatables.net-keytable-bs",
+            "main": "node_modules/datatables.net-keytable/js/dataTables.keyTable.min.js",
+            "resources": ["css/keyTable.bootstrap.min.css"]
+          },
           "datatables.net-responsive",
-          "datatables.net-responsive-bs",
+          {
+            "name": "datatables.net-responsive-bs",
+            "path": "../node_modules/datatables.net-responsive-bs",
+            "main": "js/responsive.bootstrap.min.js",
+            "deps": ["datatables.net", "datatables.net-responsive"],
+            "resources": ["css/responsive.bootstrap.min.css"]
+          },
+          {
+            "name": "datatables.net-rowgroup-bs",
+            "path": "../node_modules/datatables.net-rowgroup",
+            "main": "js/dataTables.rowGroup.min.js",
+            "resources": ["../datatables.net-rowgroup-bs/css/rowGroup.bootstrap.min.css"]
+          },
+          {
+            "name": "datatables.net-rowreorder-bs",
+            "path": "../node_modules/datatables.net-rowreorder",
+            "main": "js/dataTables.rowReorder.min.js",
+            "resources": ["../datatables.net-rowreorder-bs/css/rowReorder.bootstrap.min.css"]
+          },
+          {
+            "name": "datatables.net-scroller-bs",
+            "path": "../node_modules/datatables.net-scroller-bs",
+            "main": "node_modules/datatables.net-scroller/js/dataTables.scroller.min.js",
+            "resources": ["css/scroller.bootstrap.min.css"]
+          },
+          {
+            "name": "datatables.net-select-bs",
+            "path": "../node_modules/datatables.net-select",
+            "main": "js/dataTables.select.min.js",
+            "resources": ["../datatables.net-select-bs/css/select.bootstrap.min.css"]
+          },
           "jquery",
           {
             "name": "chart.js",

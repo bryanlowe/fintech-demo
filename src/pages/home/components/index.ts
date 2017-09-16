@@ -94,51 +94,42 @@ export class HomeLanding {
             b = new Date(b._id);
             return a - b;
 		});
+		let totals = {};
+		for(let i = 0, ii = this.model.length; i < ii; i++){
+			totals[this.model[i]._id] = {};
+			totals[this.model[i]._id]['unit_total'] = this.model[i].unit_total;
+			totals[this.model[i]._id]['revenue_total'] = this.model[i].revenue_total;
+
+		}
 		let tempArray = this.model.map((obj) => {
 	    	return obj.dataset;
 	  	});
 	  	tempArray = [].concat.apply([], tempArray);
 
-	  	let field_definitions = [{name: 'Brand',   type: 'string',   filterable: true},
-        {name: 'Date',        type: 'string',   filterable: true, rowLabelable: false, columnLabelable: true,  sortFunction: (a, b) => { return (new Date(a)).getTime() - (new Date(b)).getTime(); }},
-        {name: 'ISO_Date',          type: 'date',  filterable: false, rowLabelable: false},
-        {name: 'Units',        type: 'float',  filterable: false, rowLabelable: false, summarizable: 'sum', displayFunction: (value) => { return value.toFixed(2).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");}},
-        {name: 'Revenue',     type: 'float',  filterable: false, rowLabelable: false,  summarizable: 'sum', displayFunction: (value) => { return '$' + value.toFixed(2).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");}}]
+	  	let field_definitions = [
+	  		{name: 'Brand', type: 'string', filterable: true},
+        	{name: 'Date', type: 'string', filterable: true, rowLabelable: false, columnLabelable: true, sortFunction: (a, b) => { return (new Date(a)).getTime() - (new Date(b)).getTime(); }},
+        	{name: 'ISO_Date', type: 'date', filterable: false, rowLabelable: false},
+        	{name: 'Units', type: 'float',  filterable: false, rowLabelable: false, summarizable: 'sum', displayFunction: (value) => { return value.toFixed(2).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");}},
+        	{name: 'Unit_Total', type: 'float',  filterable: false, rowLabelable: false},
+        	{name: 'Units Percentage', type: 'float', rowLabelable: false, pseudo: true, pseudoFunction: (row) => { return (row.Units / row.Unit_Total) * 100; }, summarizable: 'sum', displayFunction: function(value){ return value.toFixed(2) + '%'; }},
+        	{name: 'Revenue', type: 'float', filterable: false, rowLabelable: false, summarizable: 'sum', displayFunction: (value) => { return '$' + value.toFixed(2).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");}},
+        	{name: 'Revenue_Total', type: 'float',  filterable: false, rowLabelable: false},
+        	{name: 'Revenue Percentage', type: 'float', rowLabelable: false, pseudo: true, pseudoFunction: (row) => { return (row.Revenue / row.Revenue_Total) * 100; }, summarizable: 'sum', displayFunction: function(value){ return value.toFixed(2) + '%'; }}
+        ];
 
 	  	let columns = ['Brand'];
 	  	columns[columns.length] = 'Date';
 	  	columns[columns.length] = 'ISO_Date';
 	  	columns[columns.length] = 'Units';
+	  	columns[columns.length] = 'Unit_Total';
 	  	columns[columns.length] = 'Revenue';
+	  	columns[columns.length] = 'Revenue_Total';
 	  	let product = tempArray[0].product;
 	  	for(let i = 0, ii = product.length; i < ii; i++) {
 	  		columns[columns.length] = product[i].spec_type;
         	field_definitions.push({name: product[i].spec_type,  type: 'string', filterable: true});
 	  	}
-
-	  	let jsonArray = tempArray.map((obj) => {
-	    	let result = {};
-	    	result['Brand'] = obj.brand;
-	    	result['Date'] = obj.time_frame;
-	    	result['ISO_Date'] = obj.last_sale_date;
-	    	result['Units'] = obj.units;
-	    	result['Revenue'] = obj.revenue;
-	    	for(let i = 0, ii = obj.product.length; i < ii; i++){
-	      		result[obj.product[i].spec_type] = obj.product[i].spec_value;
-	    	}
-	    	return result;
-	  	});
-
-	  	jsonArray.sort(function(a, b) {
-	  		const brandA = a.Brand.toLowerCase();
-	  		const brandB = b.Brand.toLowerCase();
-	  		const dateA = (new Date(a.Date)).getTime();
-	  		const dateB = (new Date(b.Date)).getTime();
-	  		if(brandA === brandB){
-				return dateA - dateB;
-	  		}
-			return brandA > brandB ? 1 : -1;
-        });
 	  
 	  	let dataArray = tempArray.map((obj) => {
 	    	let result = [];
@@ -146,12 +137,15 @@ export class HomeLanding {
 	    	result[result.length] = obj.time_frame;
 	    	result[result.length] = obj.last_sale_date;
 	    	result[result.length] = obj.units;
+	    	result[result.length] = totals[obj.last_sale_date].unit_total;
 	    	result[result.length] = obj.revenue;
+	    	result[result.length] = totals[obj.last_sale_date].revenue_total;
 	    	for(let i = 0, ii = obj.product.length; i < ii; i++){
 	      		result[result.length] = obj.product[i].spec_value;
 	    	}
 	    	return result;
 	  	});
+
 	  	dataArray.sort(function(a, b) {
 	  		const brandA = a[0].toLowerCase();
 	  		const brandB = b[0].toLowerCase();
@@ -164,31 +158,18 @@ export class HomeLanding {
         });
        
 	  	dataArray = [columns].concat(dataArray);
-	  	this.updateDataTable(dataArray, jsonArray, field_definitions, ['Brand'], ['Date'], ['Units', 'Revenue']);
-	  	//console.log(jsonArray);
-
-
-
-	  	//this.pivot = new Pivot(dataArray, ['Brand'], ['Date'], 'Units', 'sum');
-	  	//console.log(pivot);
-	  	//pivot.init({json: JSON.stringify(dataArray)});
-	  	//this.tableData.header = this.pivot.data.table[0].value;
-
-	  	//console.log('pivot.data', this.pivot.data);
-	  	//console.log(pivot);
+	  	this.updateDataTable(dataArray, field_definitions, ['Brand'], ['Date'], ['Units', 'Revenue']);
 	}
 
 	/**
 	 * Updates the DataTable data
 	 */
-	private updateDataTable(dataArray, jsonArray, fields, rowLabels, columnLabels, summaries){
+	private updateDataTable(dataArray, fields, rowLabels, columnLabels, summaries){
 		this.tableData.json = JSON.stringify(dataArray);
-		//this.tableData.input = jsonArray;
 		this.tableData.fields = fields;
 		this.tableData.rowLabels = rowLabels;
 		this.tableData.columnLabels = columnLabels;
 		this.tableData.summaries = summaries;
-		//this.tableData.options = this.model.table_data.options;
 	}
 
 	/**

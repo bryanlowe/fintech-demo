@@ -2,7 +2,7 @@ import {customElement} from 'aurelia-framework';
 import {bindable, inject, useView} from 'aurelia-framework'; 
 import {BindingEngine} from 'aurelia-binding';
 import * as $ from 'jquery';
-import * as DataTable from 'datatables.net-responsive-bs';
+import * as DataTable from 'datatables.net';
 import './../../../scripts/vendors/pivot/pivot.min.js';
 import './../../../scripts/vendors/pivot/jquery_pivot.js';
  
@@ -29,16 +29,15 @@ export class DataTableElement {
   private setupPivot(input){
     if(DataTable){ // check if the plugin exists, there is a delay between loading and attaching
         input.callbacks = {afterUpdateResults: () => {
-            $('#data-table-container table').DataTable({
-              searching: false,
+            let table = $('#data-table-container table').DataTable({
               scrollY: "500px",
               scrollX: "1200px",
               scrollCollapse: true,
               paging: false,
-              fixedColumns: true
+              select: 'single'
             });
             $('#data-table-container table').addClass('table-bordered');
-            //console.log('pivot data', pivot.data('all'));
+            table.column('0:visible').order('asc').draw();
         }};
         $('#data-menu-container').pivot_display('setup', input);
       } else {
