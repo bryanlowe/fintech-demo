@@ -185,11 +185,17 @@ model.schema.methods.createPieGraphData = function(table_data){
 }
 
 // Aggregates model data
-exports.getModelData = function(req, res){
-    model.aggregate(model.schema.methods.createAggregate(req.params.time_frame)).exec(function(error, data) {
+exports.getModelData = (req, res) => {
+    model.aggregate(model.schema.methods.createAggregate(req.params.time_frame)).exec((error, data) => {
         if (error) {
             res.send({result:'ERROR', message: error});
         } else {
+            // sort the model by time_frame
+            data.sort((a, b) => {
+                a = new Date(a._id);
+                b = new Date(b._id);
+                return a - b;
+            });
             res.json(data);
         }   
     });

@@ -1,8 +1,9 @@
 import {customElement} from 'aurelia-framework';
 import {bindable, inject, useView} from 'aurelia-framework'; 
 import {BindingEngine} from 'aurelia-binding';
+import {EventAggregator} from 'aurelia-event-aggregator';
 import * as $ from 'jquery';
-import * as DataTable from 'datatables.net';
+import * as DataTable from 'datatables.net-buttons-bs';
 import './../../../scripts/vendors/pivot/pivot.min.js';
 import './../../../scripts/vendors/pivot/jquery_pivot.js';
  
@@ -11,13 +12,13 @@ import './../../../scripts/vendors/pivot/jquery_pivot.js';
 /**
  * Data table takes data and displays in an interactive table
  */
-@inject(BindingEngine)
+@inject(BindingEngine, EventAggregator)
 export class DataTableElement { 
 	@bindable tableData: any = {json: ''};  
   private subscription: any = null;
   private dataTable: any = null;
 
-  constructor(private bindingEngine: BindingEngine){}
+  constructor(private bindingEngine: BindingEngine, private events: EventAggregator){}
 
   /**
    * updates the pivot table
@@ -28,6 +29,7 @@ export class DataTableElement {
 
   private setupPivot(input){
     if(DataTable){ // check if the plugin exists, there is a delay between loading and attaching
+        $('.pivot_header_fields').remove();
         input.callbacks = {afterUpdateResults: () => {
             let table = $('#data-table-container table').DataTable({
               scrollY: "500px",
@@ -38,6 +40,14 @@ export class DataTableElement {
             });
             $('#data-table-container table').addClass('table-bordered');
             table.column('0:visible').order('asc').draw();
+            this.events.publish('$datatableChanged', table.buttons.exportData({
+              format: {
+                body: (innerHtml, rowIndex, columnIndex, cellNode) => {
+                  const value = Number(innerHtml.replace('$', '').replace('%', '').replace('--', '0').replace(/,/g, ''));
+                  return !isNaN(value) ? value : innerHtml;
+                }
+              }
+            }));
         }};
         $('#data-menu-container').pivot_display('setup', input);
       } else {

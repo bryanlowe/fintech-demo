@@ -3,66 +3,79 @@ var mongoose = require('mongoose');
 var model = mongoose.model('SalesGrowth');
 
 model.schema.methods.createAggregate = function(time_frame){
-    var result = [
-        {
-            '$unwind': '$sale_statement'
+  var result = [
+    {
+      '$unwind': '$sale_statement'
+    },
+    { 
+      '$project': { 
+        '_id': 0, 
+        'brand': 1,
+        'sale_statement.units': 1,
+        'sale_statement.revenue': 1,
+        'sale_statement.time_frame.week_start': 1,
+        'sale_statement.time_frame.month_start': 1,
+        'sale_statement.time_frame.year_start': 1,
+        'sale_statement.time_frame.iso_date': 1,
+        'product': 1
+      }
+    },
+    {   
+      '$group': {
+        '_id': {
+          'brand': '$brand', 
+          'time_frame': '$sale_statement.time_frame.'+time_frame+'_start',
+          'product': '$product',
+        }, 
+        'units': {
+          '$sum': '$sale_statement.units'
         },
-        { 
-            '$project': { 
-                '_id': 0, 
-                'brand': 1,
-                'sale_statement.units': 1,
-                'sale_statement.revenue': 1,
-                'sale_statement.time_frame.week_start': 1,
-                'sale_statement.time_frame.month_start': 1,
-                'sale_statement.time_frame.year_start': 1
-            }
+        'revenue': {
+          '$sum': '$sale_statement.revenue'
         },
-        {   
-            '$group': {
-                '_id': {
-                    'brand': '$brand', 
-                    'time_frame': '$sale_statement.time_frame.'+time_frame+'_start'
-                }, 
-                'units': {
-                    '$sum': '$sale_statement.units'
-                },
-                'revenue': {
-                    '$sum': '$sale_statement.revenue'
-                }
-            }
-        },
-        {
-            '$sort': {
-                '_id.brand': 1
-            }
-        },
-        {
-            '$project': {
-                'doc': {
-                    'brand': '$_id.brand',
-                    'units': '$units',
-                    'revenue': '$revenue'
-                },
-                'time_frame': '$_id.time_frame'
-            }
-        },
-        {   
-            '$group':{
-                '_id': '$time_frame',
-                'unit_total': {
-                    '$sum': '$doc.units'
-                },
-                'revenue_total': {
-                    '$sum': '$doc.revenue'
-                },
-                'dataset':{
-                    '$push': '$doc'
-                }
-            }
+        'last_sale_date': { 
+          '$last': "$sale_statement.time_frame.iso_date" 
         }
-    ];
-    return result;
+      }
+    },
+    {
+      '$sort': {
+        '_id.brand': 1
+      }
+    },
+    {
+      '$project': {
+        'doc': {
+          'brand': '$_id.brand',
+          'time_frame': '$_id.time_frame',
+          'product': '$_id.product',
+          'units': '$units',
+          'revenue': '$revenue',
+          'last_sale_date': '$last_sale_date'
+        }
+      }
+    },
+    { 
+      '$group':{
+        '_id': '$doc.last_sale_date',
+        'unit_total': {
+          '$sum': '$doc.units'
+        },
+        'revenue_total': {
+          '$sum': '$doc.revenue'
+        },
+        'dataset':{
+          '$push': '$doc'
+        }
+      }
+    },
+    {
+      '$sort': {
+        '_id': 1
+      }
+    }
+  ];
+  return result;
 }
 
 // create table data function
@@ -202,13 +215,7 @@ exports.getModelData = function(req, res){
                 b = new Date(b._id);
                 return a - b;
             });
-            result = {};
-            result['table_data'] = model.schema.methods.createDataTable(data, req.params);
-            result['line_graph_data'] = model.schema.methods.createLineGraphData(result['table_data']);
-            result['bar_graph_data'] = model.schema.methods.createBarGraphData(result['table_data']);
-            result['pie_graph_data'] = model.schema.methods.createPieGraphData(result['table_data']);
-            result['table_data']['header'] = ['Brand'].concat(result['table_data']['header']);
-            res.json(result);
+            res.json(data);
         }   
     });
 }
