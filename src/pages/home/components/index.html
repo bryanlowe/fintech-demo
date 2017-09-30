@@ -37,7 +37,7 @@
                         <div id="market_view_table">
                             <div class="x_panel">
                                 <div class="x_content">
-                                    <data-table table-data.bind="tableData"></data-table>
+                                    <data-table table-data.bind="tableData" spinnerClose.bind="spinnerClose" spinnerOpen.bind="spinnerOpen"></data-table>
                                 </div>
                             </div>
                         </div>
@@ -46,5 +46,5 @@
             </div>
         </div> 
     </div>
-    <load-spinner toggle.bind="showSpinner"></load-spinner>
+    <load-spinner toggle.bind="spinner"></load-spinner>
 </template>

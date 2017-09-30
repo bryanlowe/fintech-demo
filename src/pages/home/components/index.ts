@@ -4,15 +4,12 @@ import {BindingEngine} from 'aurelia-binding';
 import {EventAggregator, Subscription} from 'aurelia-event-aggregator';
 import * as $ from 'jquery';
 import * as moment from 'moment';
-//import * as Pivot from 'quick-pivot';
-//import './../../../scripts/vendors/pivot/pivot.min.js';
 
 @inject(HttpClient, BindingEngine, EventAggregator)
 export class HomeLanding { 
 	private self = this; // this object has to be saved in order to access class properties from callbacks
 	@bindable({ defaultBindingMode: bindingMode.twoWay }) page_state: any;
 	@bindable model: any = null;
-	@bindable showSpinner = false;
 	@bindable graphData: any = {type: '', data: {labels: [], datasets: []}, options: {}};
 	@bindable tableData: any = {json: '', fields: [], rowLabels:[], columnLabels: [], summaries:[]}; 
 	private observers: any[] = [];
@@ -87,12 +84,18 @@ export class HomeLanding {
 	 */
 	updateDataTableAndChart(){
 		if (this.model) {
-			this.showSpinner = true;
 			this.createPivotData();
-			this.showSpinner = false;
 		} else {
 			this.fetchModelData();
 		}
+	}
+
+	spinnerOpen() {
+		this.events.publish('$openSpinner');
+	}
+
+	spinnerClose() {
+		this.events.publish('$closeSpinner');
 	}
 
 	/**
@@ -415,13 +418,13 @@ export class HomeLanding {
 	 */
 	private fetchModelData() {
 		const _class = this;
-		this.showSpinner = true;
+		this.spinnerOpen();
 		return this.httpClient.fetch(this.page_state.model+'/'+this.page_state.time_frame+'/'+this.page_state.data_type+'/'+this.page_state.data_format+'/'+this.page_state.company)
 			.then(response => response.json())
 			.then(data => {_class.model = data})
 			.then(() => {
 				this.createPivotData();
-				this.showSpinner = false;
+				this.spinnerClose();
 			});
 	}
 

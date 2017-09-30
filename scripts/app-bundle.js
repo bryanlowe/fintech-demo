@@ -247,7 +247,6 @@ define('pages/home/components/index',["require", "exports", "aurelia-fetch-clien
             this.events = events;
             this.self = this;
             this.model = null;
-            this.showSpinner = false;
             this.graphData = { type: '', data: { labels: [], datasets: [] }, options: {} };
             this.tableData = { json: '', fields: [], rowLabels: [], columnLabels: [], summaries: [] };
             this.observers = [];
@@ -288,13 +287,17 @@ define('pages/home/components/index',["require", "exports", "aurelia-fetch-clien
         };
         HomeLanding.prototype.updateDataTableAndChart = function () {
             if (this.model) {
-                this.showSpinner = true;
                 this.createPivotData();
-                this.showSpinner = false;
             }
             else {
                 this.fetchModelData();
             }
+        };
+        HomeLanding.prototype.spinnerOpen = function () {
+            this.events.publish('$openSpinner');
+        };
+        HomeLanding.prototype.spinnerClose = function () {
+            this.events.publish('$closeSpinner');
         };
         HomeLanding.prototype.getTotals = function () {
             var totals = {};
@@ -534,13 +537,13 @@ define('pages/home/components/index',["require", "exports", "aurelia-fetch-clien
         HomeLanding.prototype.fetchModelData = function () {
             var _this = this;
             var _class = this;
-            this.showSpinner = true;
+            this.spinnerOpen();
             return this.httpClient.fetch(this.page_state.model + '/' + this.page_state.time_frame + '/' + this.page_state.data_type + '/' + this.page_state.data_format + '/' + this.page_state.company)
                 .then(function (response) { return response.json(); })
                 .then(function (data) { _class.model = data; })
                 .then(function () {
                 _this.createPivotData();
-                _this.showSpinner = false;
+                _this.spinnerClose();
             });
         };
         HomeLanding.prototype.setObservers = function () {
@@ -601,10 +604,6 @@ define('pages/home/components/index',["require", "exports", "aurelia-fetch-clien
         __decorate([
             aurelia_framework_1.bindable,
             __metadata("design:type", Object)
-        ], HomeLanding.prototype, "showSpinner", void 0);
-        __decorate([
-            aurelia_framework_1.bindable,
-            __metadata("design:type", Object)
         ], HomeLanding.prototype, "graphData", void 0);
         __decorate([
             aurelia_framework_1.bindable,
@@ -628,22 +627,25 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-define('resources/elements/common/load-spinner-element',["require", "exports", "aurelia-framework", "aurelia-framework", "aurelia-binding"], function (require, exports, aurelia_framework_1, aurelia_framework_2, aurelia_binding_1) {
+define('resources/elements/common/load-spinner-element',["require", "exports", "aurelia-framework", "aurelia-framework", "aurelia-binding", "aurelia-event-aggregator"], function (require, exports, aurelia_framework_1, aurelia_framework_2, aurelia_binding_1, aurelia_event_aggregator_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var LoadSpinnerElement = (function () {
-        function LoadSpinnerElement(bindingEngine) {
+        function LoadSpinnerElement(bindingEngine, events) {
             this.bindingEngine = bindingEngine;
+            this.events = events;
             this.toggle = false;
-            this.subscription = null;
+            this.subscriptionList = [];
         }
         LoadSpinnerElement.prototype.attached = function () {
             var _this = this;
-            this.subscription = this.bindingEngine.propertyObserver(this, 'toggle')
-                .subscribe(function (newValue, oldValue) { _this.toggle = newValue; });
+            this.subscriptionList.push(this.events.subscribe('$openSpinner', function () { return _this.toggle = true; }));
+            this.subscriptionList.push(this.events.subscribe('$closeSpinner', function () { return _this.toggle = false; }));
         };
         LoadSpinnerElement.prototype.detached = function () {
-            this.subscription.dispose();
+            for (var i = 0, ii = this.subscriptionList.length; i < ii; i++) {
+                this.subscriptionList[i].dispose();
+            }
         };
         __decorate([
             aurelia_framework_2.bindable,
@@ -652,8 +654,8 @@ define('resources/elements/common/load-spinner-element',["require", "exports", "
         LoadSpinnerElement = __decorate([
             aurelia_framework_1.customElement('load-spinner'),
             aurelia_framework_2.useView('./load-spinner-element.html'),
-            aurelia_framework_2.inject(aurelia_binding_1.BindingEngine),
-            __metadata("design:paramtypes", [aurelia_binding_1.BindingEngine])
+            aurelia_framework_2.inject(aurelia_binding_1.BindingEngine, aurelia_event_aggregator_1.EventAggregator),
+            __metadata("design:paramtypes", [aurelia_binding_1.BindingEngine, aurelia_event_aggregator_1.EventAggregator])
         ], LoadSpinnerElement);
         return LoadSpinnerElement;
     }());
@@ -737,11 +739,18 @@ define('resources/elements/market-view/data-table-element',["require", "exports"
             this.subscription = null;
             this.dataTable = null;
         }
+        DataTableElement.prototype.spinnerOpen = function () {
+            this.events.publish('$spinnerOpen');
+        };
+        DataTableElement.prototype.spinnerClose = function () {
+            this.events.publish('$spinnerClose');
+        };
         DataTableElement.prototype.updatePivottable = function () {
             this.setupPivot(this.tableData);
         };
         DataTableElement.prototype.setupPivot = function (input) {
             var _this = this;
+            this.spinnerOpen();
             if (DataTable) {
                 $('.pivot_header_fields').remove();
                 input.callbacks = { afterUpdateResults: function () {
@@ -764,6 +773,7 @@ define('resources/elements/market-view/data-table-element',["require", "exports"
                         }));
                     } };
                 $('#data-menu-container').pivot_display('setup', input);
+                this.spinnerClose();
             }
             else {
                 setTimeout(function () {
@@ -1288,7 +1298,7 @@ define('text!less/mixins.css', ['module'], function(module) { module.exports = "
 define('text!less/variables.css', ['module'], function(module) { module.exports = ""; });
 define('text!pages/page-elements/site-footer.html', ['module'], function(module) { module.exports = "<template>  \r\n  <!-- footer content -->\r\n        <footer>\r\n          <div class=\"pull-right\">\r\n            Gentelella - Bootstrap Admin Template by <a href=\"https://colorlib.com\">Colorlib</a>\r\n          </div>\r\n          <div class=\"clearfix\"></div>\r\n        </footer>\r\n        <!-- /footer content -->\r\n</template>"; });
 define('text!pages/page-elements/topbar-menu.html', ['module'], function(module) { module.exports = "<template>\r\n  <!-- top navigation -->\r\n        <div class=\"top_nav\">\r\n            <div class=\"nav_menu\">\r\n                <nav>\r\n                \r\n                <ul class=\"nav navbar-nav navbar-right\">\r\n                    <li class=\"\">\r\n                    <a href=\"javascript:;\" class=\"user-profile dropdown-toggle\" data-toggle=\"dropdown\" aria-expanded=\"false\">\r\n                        <img src=\"src/img/img.jpg\" alt=\"\">John Doe\r\n                        <span class=\" fa fa-angle-down\"></span>\r\n                    </a>\r\n                    <ul class=\"dropdown-menu dropdown-usermenu pull-right\">\r\n                        <li><a href=\"javascript:;\"> Profile</a></li>\r\n                        <li>\r\n                        <a href=\"javascript:;\">\r\n                            <span class=\"badge bg-red pull-right\">50%</span>\r\n                            <span>Settings</span>\r\n                        </a>\r\n                        </li>\r\n                        <li><a href=\"javascript:;\">Help</a></li>\r\n                        <li><a href=\"login.html\"><i class=\"fa fa-sign-out pull-right\"></i> Log Out</a></li>\r\n                    </ul>\r\n                    </li>\r\n\r\n                    <li role=\"presentation\" class=\"dropdown\">\r\n                    <a href=\"javascript:;\" class=\"dropdown-toggle info-number\" data-toggle=\"dropdown\" aria-expanded=\"false\">\r\n                        <i class=\"fa fa-envelope-o\"></i>\r\n                        <span class=\"badge bg-green\">6</span>\r\n                    </a>\r\n                    <ul id=\"menu1\" class=\"dropdown-menu list-unstyled msg_list\" role=\"menu\">\r\n                        <li>\r\n                        <a>\r\n                            <span class=\"image\"><img src=\"src/img/img.jpg\" alt=\"Profile Image\" /></span>\r\n                            <span>\r\n                            <span>John Smith</span>\r\n                            <span class=\"time\">3 mins ago</span>\r\n                            </span>\r\n                            <span class=\"message\">\r\n                            Film festivals used to be do-or-die moments for movie makers. They were where...\r\n                            </span>\r\n                        </a>\r\n                        </li>\r\n                        <li>\r\n                        <a>\r\n                            <span class=\"image\"><img src=\"src/img/img.jpg\" alt=\"Profile Image\" /></span>\r\n                            <span>\r\n                            <span>John Smith</span>\r\n                            <span class=\"time\">3 mins ago</span>\r\n                            </span>\r\n                            <span class=\"message\">\r\n                            Film festivals used to be do-or-die moments for movie makers. They were where...\r\n                            </span>\r\n                        </a>\r\n                        </li>\r\n                        <li>\r\n                        <a>\r\n                            <span class=\"image\"><img src=\"src/img/img.jpg\" alt=\"Profile Image\" /></span>\r\n                            <span>\r\n                            <span>John Smith</span>\r\n                            <span class=\"time\">3 mins ago</span>\r\n                            </span>\r\n                            <span class=\"message\">\r\n                            Film festivals used to be do-or-die moments for movie makers. They were where...\r\n                            </span>\r\n                        </a>\r\n                        </li>\r\n                        <li>\r\n                        <a>\r\n                            <span class=\"image\"><img src=\"src/img/img.jpg\" alt=\"Profile Image\" /></span>\r\n                            <span>\r\n                            <span>John Smith</span>\r\n                            <span class=\"time\">3 mins ago</span>\r\n                            </span>\r\n                            <span class=\"message\">\r\n                            Film festivals used to be do-or-die moments for movie makers. They were where...\r\n                            </span>\r\n                        </a>\r\n                        </li>\r\n                        <li>\r\n                        <div class=\"text-center\">\r\n                            <a>\r\n                            <strong>See All Alerts</strong>\r\n                            <i class=\"fa fa-angle-right\"></i>\r\n                            </a>\r\n                        </div>\r\n                        </li>\r\n                    </ul>\r\n                    </li>\r\n                </ul>\r\n                </nav>\r\n            </div>\r\n            </div>\r\n            <!-- /top navigation -->        \r\n</template>"; });
-define('text!pages/home/components/index.html', ['module'], function(module) { module.exports = "<template>\r\n    <!-- sidebar menu -->\r\n    <compose router.bind=\"router\" view-model=\"pages/page-elements/sidebar-menu\"></compose>\r\n    <!-- /sidebar menu -->\r\n\r\n    <!-- top navigation -->\r\n    <compose view-model=\"pages/page-elements/topbar-menu\"></compose>\r\n    <!-- /top navigation -->\r\n\r\n    <div class=\"right_col\" role=\"main\">\r\n        <!-- market view panel -->\r\n        <div id=\"market_view\" class=\"row\">\r\n            <div class=\"col-md-12 col-sm-12 col-xs-12\">\r\n                <div class=\"x_panel\">\r\n                    <div class=\"x_title\">\r\n                        <h2 id=\"view_title\">Market View</h2>\r\n                        <div class=\"clearfix\"></div>\r\n                    </div>\r\n                    <div class=\"x_content\">\r\n                        <!-- Interactive Chart -->\r\n                        <!--div id=\"market_view_chart\">\r\n                            <div class=\"x_panel\">\r\n                                <div class=\"x_content\">\r\n                                    <data-graph graph-data.bind=\"graphData\"></data-graph>\r\n                                </div>\r\n                            </div>\r\n                        </div-->\r\n\r\n                        <!-- Interactive Table -->\r\n                        <!--div id=\"market_view_table\">\r\n                            <div class=\"x_panel\">\r\n                                <div class=\"x_content\">\r\n                                    <pivot-table table-data.bind=\"tableData\"></pivot-table>\r\n                                </div>\r\n                            </div>\r\n                        </div-->\r\n                        <div id=\"market_view_table\">\r\n                            <div class=\"x_panel\">\r\n                                <div class=\"x_content\">\r\n                                    <data-table table-data.bind=\"tableData\"></data-table>\r\n                                </div>\r\n                            </div>\r\n                        </div>\r\n                    </div>\r\n                </div>\r\n            </div>\r\n        </div> \r\n    </div>\r\n    <load-spinner toggle.bind=\"showSpinner\"></load-spinner>\r\n</template>"; });
+define('text!pages/home/components/index.html', ['module'], function(module) { module.exports = "<template>\r\n    <!-- sidebar menu -->\r\n    <compose router.bind=\"router\" view-model=\"pages/page-elements/sidebar-menu\"></compose>\r\n    <!-- /sidebar menu -->\r\n\r\n    <!-- top navigation -->\r\n    <compose view-model=\"pages/page-elements/topbar-menu\"></compose>\r\n    <!-- /top navigation -->\r\n\r\n    <div class=\"right_col\" role=\"main\">\r\n        <!-- market view panel -->\r\n        <div id=\"market_view\" class=\"row\">\r\n            <div class=\"col-md-12 col-sm-12 col-xs-12\">\r\n                <div class=\"x_panel\">\r\n                    <div class=\"x_title\">\r\n                        <h2 id=\"view_title\">Market View</h2>\r\n                        <div class=\"clearfix\"></div>\r\n                    </div>\r\n                    <div class=\"x_content\">\r\n                        <!-- Interactive Chart -->\r\n                        <!--div id=\"market_view_chart\">\r\n                            <div class=\"x_panel\">\r\n                                <div class=\"x_content\">\r\n                                    <data-graph graph-data.bind=\"graphData\"></data-graph>\r\n                                </div>\r\n                            </div>\r\n                        </div-->\r\n\r\n                        <!-- Interactive Table -->\r\n                        <!--div id=\"market_view_table\">\r\n                            <div class=\"x_panel\">\r\n                                <div class=\"x_content\">\r\n                                    <pivot-table table-data.bind=\"tableData\"></pivot-table>\r\n                                </div>\r\n                            </div>\r\n                        </div-->\r\n                        <div id=\"market_view_table\">\r\n                            <div class=\"x_panel\">\r\n                                <div class=\"x_content\">\r\n                                    <data-table table-data.bind=\"tableData\" spinnerClose.bind=\"spinnerClose\" spinnerOpen.bind=\"spinnerOpen\"></data-table>\r\n                                </div>\r\n                            </div>\r\n                        </div>\r\n                    </div>\r\n                </div>\r\n            </div>\r\n        </div> \r\n    </div>\r\n    <load-spinner toggle.bind=\"spinner\"></load-spinner>\r\n</template>"; });
 define('text!resources/elements/common/load-spinner-element.html', ['module'], function(module) { module.exports = "<template>\r\n\t<require from=\"pure-css-loader/css-loader.css\"></require>\r\n\t<div id=\"load-spinner\" show.bind=\"toggle\">\r\n\t\t<div class=\"loader loader-default is-active\"></div>\r\n\t</div>\r\n</template>"; });
 define('text!resources/elements/market-view/data-graph-element.html', ['module'], function(module) { module.exports = "<template>\r\n\t<div id=\"graph-container\" class=\"center-block\">\r\n\t\t<canvas id=\"chartjsGraph\"></canvas>\r\n\t</div>\r\n</template>"; });
 define('text!resources/elements/market-view/data-table-element.html', ['module'], function(module) { module.exports = "<template>\r\n\t<div id=\"data-menu-container\"></div>\r\n\t<div id=\"data-table-container\">\r\n\t\t<div id=\"results\" style=\"overflow-x: auto;\">\r\n\t\t\t<table id=\"datatable-responsive\" class=\"table table-striped table-bordered dt-responsive nowrap\" cellspacing=\"0\" width=\"100%\"></table>\r\n\t\t</div>\r\n\t</div>\r\n</template>"; });

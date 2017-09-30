@@ -1,26 +1,29 @@
 import {customElement} from 'aurelia-framework';
 import {bindable, inject, useView} from 'aurelia-framework'; 
 import {BindingEngine} from 'aurelia-binding';
+import {EventAggregator, Subscription} from 'aurelia-event-aggregator';
  
 @customElement('load-spinner')
 @useView('./load-spinner-element.html')
 /**
  * Data Graph takes data and displays in a graph
  */
-@inject(BindingEngine)
+@inject(BindingEngine, EventAggregator)
 export class LoadSpinnerElement { 
 	@bindable toggle: boolean = false; 
-  private subscription: any = null;
+  public subscriptionList: Subscription[] = []; // event subscription list
 
-  constructor(private bindingEngine: BindingEngine){}
+  constructor(private bindingEngine: BindingEngine, private events: EventAggregator){}
 
   attached(){
-    // subscribe to data table row changes
-    this.subscription = this.bindingEngine.propertyObserver(this, 'toggle')
-        .subscribe((newValue, oldValue) => { this.toggle = newValue} );
+    // subscribe to spinner toggle changes
+    this.subscriptionList.push(this.events.subscribe('$openSpinner', () => this.toggle = true ));
+    this.subscriptionList.push(this.events.subscribe('$closeSpinner', () => this.toggle = false ));
   }
 
   detached(){
-    this.subscription.dispose();
+    for(let i = 0, ii = this.subscriptionList.length; i < ii; i++){
+      this.subscriptionList[i].dispose();
+    }
   }
 } 

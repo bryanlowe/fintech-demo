@@ -20,6 +20,14 @@ export class DataTableElement {
 
   constructor(private bindingEngine: BindingEngine, private events: EventAggregator){}
 
+  spinnerOpen() {
+    this.events.publish('$spinnerOpen');
+  }
+
+  spinnerClose() {
+    this.events.publish('$spinnerClose');
+  }
+
   /**
    * updates the pivot table
    */
@@ -28,9 +36,10 @@ export class DataTableElement {
   }
 
   private setupPivot(input){
+    this.spinnerOpen();
     if(DataTable){ // check if the plugin exists, there is a delay between loading and attaching
         $('.pivot_header_fields').remove();
-        input.callbacks = {afterUpdateResults: () => {
+        input.callbacks = {afterUpdateResults: () => { 
             let table = $('#data-table-container table').DataTable({
               scrollY: "500px",
               scrollX: "1200px",
@@ -50,6 +59,7 @@ export class DataTableElement {
             }));
         }};
         $('#data-menu-container').pivot_display('setup', input);
+        this.spinnerClose();
       } else {
         setTimeout(() => {
           this.setupPivot(input);
