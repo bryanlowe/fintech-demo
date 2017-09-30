@@ -35,7 +35,6 @@ export class DataTableElement {
               scrollY: "500px",
               scrollX: "1200px",
               scrollCollapse: true,
-              paging: false,
               select: 'single'
             });
             $('#data-table-container table').addClass('table-bordered');

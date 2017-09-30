@@ -196,6 +196,11 @@
             "path": "../scripts/vendors/pivot",
             "main": "pivot.min.js"
           },
+          {
+            "name": "pure-css-loader",
+            "path": "../node_modules/pure-css-loader/dist",
+            "main": "css-loader.css"
+          },
           "moment",
           "aurelia-binding",
           "aurelia-bootstrapper",
