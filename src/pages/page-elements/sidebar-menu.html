@@ -29,7 +29,6 @@
                           <ul class="nav child_menu" style="display: none;">
                               <li><a id="brandshareBtn" href="javascript:void()" click.trigger="updatePageModel('brandshare')">Brand Share</a></li>
                               <li><a id="salesGrowthBtn" href="javascript:void()" click.trigger="updatePageModel('salesgrowth')">Sales Growth</a></li>
-                              <li><a id="industryBtn" href="javascript:void()" click.trigger="updatePageModel('industry')">Industry</a></li>
                               <li><a id="pricingBtn" href="javascript:void()" click.trigger="updatePageModel('pricing')">Pricing</a></li>
                               <li><a id="rankingBtn" href="javascript:void()" click.trigger="updatePageModel('ranking')">Ranking</a></li>
                           </ul>
@@ -46,25 +45,6 @@
                               <li><a id="weeksBtn" href="javascript:void()" click.trigger="updatePageTimeFrame('week')">Weeks</a></li>
                               <li><a id="monthsBtn" href="javascript:void()" click.trigger="updatePageTimeFrame('month')">Months</a></li>
                               <li><a id="yearsBtn" href="javascript:void()" click.trigger="updatePageTimeFrame('year')">Years</a></li>
-                          </ul>
-                      </li>
-                      <li><a id="typeli" click.delegate="anchorClicked($event)"><i class="fa fa-cubes"></i> Data Type <span class="fa fa-chevron-down"></span></a>
-                          <ul class="nav child_menu">
-                              <li class="unitsCtrl"><a id="unitsBtn" href="javascript:void()" click.trigger="updatePageDataType('units')">Units</a></li>
-                              <li class="revenueCtrl"><a id="revenueBtn" href="javascript:void()" click.trigger="updatePageDataType('revenue')">Revenue</a></li>
-                          </ul>
-                      </li>
-                      <li id="percentageDataTypes">
-                          <a id="formatli" click.delegate="anchorClicked($event)"><i class="fa fa-percent"></i> Data Format <span class="fa fa-chevron-down"></span></a>
-                          <ul class="nav child_menu">
-                              <li class="unitsCtrl"><a id="unitsPercentBtn" href="javascript:void()" click.trigger="updatePageDataFormat('whole')">Whole</a></li>
-                              <li class="revenueCtrl"><a id="revenuePercentBtn" href="javascript:void()" click.trigger="updatePageDataFormat('percentage')">Percentage</a></li>
-                          </ul>
-                      </li>
-                      <li><a id="experimentli" click.delegate="anchorClicked($event)"><i class="fa fa-percent"></i> Experimentation <span class="fa fa-chevron-down"></span></a>
-                          <ul class="nav child_menu">
-                              <li class="unitsCtrl"><a id="unitsPercentBtn" href="javascript:void()" click.trigger="updateExperiment(true)">Dataset 1</a></li>
-                              <li class="revenueCtrl"><a id="revenuePercentBtn" href="javascript:void()" click.trigger="updateExperiment(false)">Dataset 2</a></li>
                           </ul>
                       </li>
                   </ul>

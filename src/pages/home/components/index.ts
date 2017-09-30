@@ -3,6 +3,7 @@ import {bindable, bindingMode, inject} from 'aurelia-framework';
 import {BindingEngine} from 'aurelia-binding';
 import {EventAggregator, Subscription} from 'aurelia-event-aggregator';
 import * as $ from 'jquery';
+import * as moment from 'moment';
 //import * as Pivot from 'quick-pivot';
 //import './../../../scripts/vendors/pivot/pivot.min.js';
 
@@ -16,7 +17,8 @@ export class HomeLanding {
 	private observers: any[] = [];
 	public subscriptionList: Subscription[] = []; // event subscription list
 	private pivot: any;
-
+	private dateFormat: any = {week: 'MMMM DD YYYY', month: 'MMMM YYYY', year: 'YYYY'};
+	
 	constructor(private httpClient: HttpClient, private bindingEngine: BindingEngine, private events: EventAggregator){
 		// initial page state
 		this.page_state = {
@@ -80,10 +82,14 @@ export class HomeLanding {
 	}
 
 	/**
-	 * Update the page state's company
+	 * Update the page's table and chart data
 	 */
-	updateExperiment(toggle){
-		this.tableData.toggle = toggle;
+	updateDataTableAndChart(){
+		if (this.model) {
+			this.createPivotData();
+		} else {
+			this.fetchModelData();
+		}
 	}
 
 	/**
@@ -125,18 +131,32 @@ export class HomeLanding {
 
 	  	let product = tempArray[0].product;
 	  	let dataArray, dataLabels;
+	  	let defaultRowLabels = ['Brand'];
+	  	let defaultColumnLabels = ['Date'];
+	  	let defaultSummaries = ['Revenue'];
 	  	if (this.page_state.model === 'brandshare') {
 	  		dataLabels = this.brandshareFieldDefs(product);
 	  		dataArray = this.brandsharePivot(tempArray, totals);
 	  	} else if (this.page_state.model === 'salesgrowth') {
 	  		dataLabels = this.salesgrowthFieldDefs(product);
 	  		dataArray = this.salesgrowthPivot(tempArray);
+	  	} else if (this.page_state.model === 'pricing') {
+	  		dataLabels = this.pricingFieldDefs(product);
+	  		dataArray = this.pricingPivot(tempArray);
+	  	} else if (this.page_state.model === 'ranking') {
+	  		dataLabels = this.rankingFieldDefs(product);
+	  		dataArray = this.rankingPivot(tempArray);
+	  		defaultRowLabels = ['Revenue Rank', 'Unit Rank', 'Brand'];
+	  		defaultSummaries = ['Revenue Sales', 'Revenue Change', 'Unit Sales', 'Unit Change'];
+	  		defaultColumnLabels = [];
 	  	}
 
-	  	dataArray.sort(this.sortDataArray);
+	  	if (this.page_state.model !== 'ranking') {
+	  		dataArray.sort(this.sortDataArray);
+	  	}
        
 	  	dataArray = [dataLabels.columns].concat(dataArray);
-	  	this.updateDataTable(dataArray, dataLabels.fieldDefinitions, ['Brand'], ['Date'], ['Revenue']);
+	  	this.updateDataTable(dataArray, dataLabels.fieldDefinitions, defaultRowLabels, defaultColumnLabels, defaultSummaries);
 	}
 
 	/**
@@ -148,7 +168,6 @@ export class HomeLanding {
 		let fieldDefinitions = [
 	  		{name: 'Brand', type: 'string', filterable: true},
         	{name: 'Date', type: 'string', filterable: true, rowLabelable: false, columnLabelable: true, sortFunction: (a, b) => { return (new Date(a)).getTime() - (new Date(b)).getTime(); }},
-        	{name: 'ISO_Date', type: 'date', filterable: false, rowLabelable: false},
         	{name: 'Units', type: 'float',  filterable: false, rowLabelable: false, summarizable: 'sum', displayFunction: (value) => { return value.toFixed(2).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");}},
         	{name: 'Unit_Total', type: 'float',  filterable: false, rowLabelable: false},
         	{name: 'Units Percentage', type: 'float', rowLabelable: false, pseudo: true, pseudoFunction: (row) => { return (row.Units / row.Unit_Total) * 100; }, summarizable: 'sum', displayFunction: function(value){ return value.toFixed(2) + '%'; }},
@@ -159,7 +178,6 @@ export class HomeLanding {
 
 	  	let columns = ['Brand'];
 	  	columns[columns.length] = 'Date';
-	  	columns[columns.length] = 'ISO_Date';
 	  	columns[columns.length] = 'Units';
 	  	columns[columns.length] = 'Unit_Total';
 	  	columns[columns.length] = 'Revenue';
@@ -182,8 +200,7 @@ export class HomeLanding {
 		return data.map((obj) => {
 	    	let result = [];
 	    	result[result.length] = obj.brand;
-	    	result[result.length] = obj.time_frame;
-	    	result[result.length] = obj.last_sale_date;
+	    	result[result.length] = moment(obj.last_sale_date).format(this.dateFormat[this.page_state.time_frame]);
 	    	result[result.length] = obj.units;
 	    	result[result.length] = totals[obj.last_sale_date].unit_total;
 	    	result[result.length] = obj.revenue;
@@ -204,7 +221,6 @@ export class HomeLanding {
 		let fieldDefinitions = [
 	  		{name: 'Brand', type: 'string', filterable: true},
         	{name: 'Date', type: 'string', filterable: true, rowLabelable: false, columnLabelable: true, sortFunction: (a, b) => { return (new Date(a)).getTime() - (new Date(b)).getTime(); }},
-        	{name: 'ISO_Date', type: 'date', filterable: false, rowLabelable: false},
         	{name: 'Units', type: 'float',  filterable: false, rowLabelable: false, summarizable: 'sum', displayFunction: (value) => { return value.toFixed(2).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");}},
         	{name: 'Units Percentage', type: 'float', rowLabelable: false, summarizable: 'sum', displayFunction: function(value){ return value.toFixed(2) + '%'; }},
         	{name: 'Revenue', type: 'float', filterable: false, rowLabelable: false, summarizable: 'sum', displayFunction: (value) => { return '$' + value.toFixed(2).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");}},
@@ -213,7 +229,6 @@ export class HomeLanding {
 
 	  	let columns = ['Brand'];
 	  	columns[columns.length] = 'Date';
-	  	columns[columns.length] = 'ISO_Date';
 	  	columns[columns.length] = 'Units';
 	  	columns[columns.length] = 'Units Percentage';
 	  	columns[columns.length] = 'Revenue';
@@ -229,26 +244,137 @@ export class HomeLanding {
 	/**
 	 * Creates the data based on the salesgrowth pivot
 	 * @param data [array]
-	 * @param totals [array]
 	 * @return [array]
 	 */
 	private salesgrowthPivot(data) {
 		return data.map((obj, index, arr) => {
 	    	let result = [];
 	    	result[result.length] = obj.brand;
-	    	result[result.length] = obj.time_frame;
-	    	result[result.length] = obj.last_sale_date;
+	    	result[result.length] = moment(obj.last_sale_date).format(this.dateFormat[this.page_state.time_frame]);
 	    	result[result.length] = index ? arr[index].units - arr[index - 1].units : 0;
 	    	let unitGrowth = index ? ((arr[index].units - arr[index - 1].units) / arr[index - 1].units) * 100 : 0;
 	    	result[result.length] = isFinite(unitGrowth) ? unitGrowth : isNaN(unitGrowth) ? 0 : 100;
 	    	result[result.length] = index ? arr[index].revenue - arr[index - 1].revenue : 0;
-	    	let revenueGrowth = index ? ((arr[index].revenue - arr[index - 1].revenue) / arr[index - 1].revenue) * 100 : 0
-	    	result[result.length] = isFinite(revenueGrowth) ? revenueGrowth : isNaN(revenueGrowth) ? 0 : 100;;
+	    	let revenueGrowth = index ? ((arr[index].revenue - arr[index - 1].revenue) / arr[index - 1].revenue) * 100 : 0;
+	    	result[result.length] = isFinite(revenueGrowth) ? revenueGrowth : isNaN(revenueGrowth) ? 0 : 100;
 	    	for(let i = 0, ii = obj.product.length; i < ii; i++){
 	      		result[result.length] = obj.product[i].spec_value;
 	    	}
 	    	return result;
 	  	});
+	}
+
+	/**
+	 * Creates the field definitions for pricing
+	 * @param product {object}
+	 * @return {object}
+	 */
+	private pricingFieldDefs(product) {
+		let fieldDefinitions = [
+	  		{name: 'Brand', type: 'string', filterable: true},
+        	{name: 'Date', type: 'string', filterable: true, rowLabelable: false, columnLabelable: true, sortFunction: (a, b) => { return (new Date(a)).getTime() - (new Date(b)).getTime(); }},
+        	{name: 'Units', type: 'float',  filterable: false, rowLabelable: false, summarizable: 'avg', displayFunction: (value) => { return value.toFixed(2).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");}},
+        	{name: 'Revenue', type: 'float', filterable: false, rowLabelable: false, summarizable: 'avg', displayFunction: (value) => { return '$' + value.toFixed(2).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");}},
+        ];
+
+	  	let columns = ['Brand'];
+	  	columns[columns.length] = 'Date';
+	  	columns[columns.length] = 'Units';
+	  	columns[columns.length] = 'Revenue';
+	  	for(let i = 0, ii = product.length; i < ii; i++) {
+	  		columns[columns.length] = product[i].spec_type;
+        	fieldDefinitions.push({name: product[i].spec_type,  type: 'string', filterable: true});
+	  	}
+
+	  	return {fieldDefinitions: fieldDefinitions, columns: columns};
+	}
+
+	/**
+	 * Creates the data based on the pricing pivot
+	 * @param data [array]
+	 * @return [array]
+	 */
+	private pricingPivot(data) {
+		return data.map((obj) => {
+	    	let result = [];
+	    	result[result.length] = obj.brand;
+	    	result[result.length] = moment(obj.last_sale_date).format(this.dateFormat[this.page_state.time_frame]);
+	    	result[result.length] = obj.units;
+	    	result[result.length] = obj.revenue;
+	    	for(let i = 0, ii = obj.product.length; i < ii; i++){
+	      		result[result.length] = obj.product[i].spec_value;
+	    	}
+	    	return result;
+	  	});
+	}
+
+	/**
+	 * Creates the field definitions for ranking
+	 * @param product {object}
+	 * @return {object}
+	 */
+	private rankingFieldDefs(product) {
+		let fieldDefinitions = [
+	  		{name: 'Revenue Rank', type: 'float', filterable: true},
+	  		{name: 'Unit Rank', type: 'float', filterable: true},
+	  		{name: 'Brand', type: 'string', filterable: true},
+        	{name: 'Unit Sales', type: 'float',  filterable: false, rowLabelable: false, summarizable: 'sum', displayFunction: (value) => { return value.toFixed(2).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");}},
+        	{name: 'Unit Change', type: 'float', rowLabelable: false, summarizable: 'sum', displayFunction: function(value){ return value.toFixed(2) + '%'; }},
+        	{name: 'Revenue Sales', type: 'float', filterable: false, rowLabelable: false, summarizable: 'sum', displayFunction: (value) => { return '$' + value.toFixed(2).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");}},
+        	{name: 'Revenue Change', type: 'float', rowLabelable: false, summarizable: 'sum', displayFunction: function(value){ return value.toFixed(2) + '%'; }},
+        ];
+
+	  	let columns = ['Revenue Rank'];
+	  	columns[columns.length] = 'Unit Rank';
+	  	columns[columns.length] = 'Brand';
+	  	columns[columns.length] = 'Unit Sales';
+	  	columns[columns.length] = 'Unit Change';
+	  	columns[columns.length] = 'Revenue Sales';
+	  	columns[columns.length] = 'Revenue Change';
+	  	for(let i = 0, ii = product.length; i < ii; i++) {
+	  		columns[columns.length] = product[i].spec_type;
+        	fieldDefinitions.push({name: product[i].spec_type,  type: 'string', filterable: true});
+	  	}
+
+	  	return {fieldDefinitions: fieldDefinitions, columns: columns};
+	}
+
+	/**
+	 * Creates the data based on the ranking pivot
+	 * @param data [array]
+	 * @return [array]
+	 */
+	private rankingPivot(data) {
+		data = data.map((obj, index, arr) => {
+	    	let result = [];
+	    	result[result.length] = obj.brand;
+	    	result[result.length] = obj.units;
+	    	let unitGrowth = index ? ((arr[index].units - arr[index - 1].units) / arr[index - 1].units) * 100 : 0;
+	    	result[result.length] = isFinite(unitGrowth) ? unitGrowth : isNaN(unitGrowth) ? 0 : 100;
+	    	result[result.length] = obj.revenue;
+	    	let revenueGrowth = index ? ((arr[index].revenue - arr[index - 1].revenue) / arr[index - 1].revenue) * 100 : 0;
+	    	result[result.length] = isFinite(revenueGrowth) ? revenueGrowth : isNaN(revenueGrowth) ? 0 : 100;
+	    	for(let i = 0, ii = obj.product.length; i < ii; i++){
+	      		result[result.length] = obj.product[i].spec_value;
+	    	}
+	    	return result;
+	  	});
+
+	  	console.log(data);
+
+		// add unit rank
+	  	data.sort((a, b) => { return b[1] - a[1]; });
+	  	for (let i = 0, ii = data.length; i < ii; i++){
+	  		data[i].unshift(i + 1);
+	  	}
+
+	  	// add revenue rank
+	  	data.sort((a, b) => { return b[4] - a[4]; });
+	  	for (let i = 0, ii = data.length; i < ii; i++){
+	  		data[i].unshift(i + 1);
+	  	}
+
+	  	return data;
 	}
 
 	/**
@@ -299,17 +425,11 @@ export class HomeLanding {
 	 */
 	private setObservers(){
 		this.observers.push(this.bindingEngine.propertyObserver(this.page_state, 'model')
-      		.subscribe((newValue, oldValue) => {
-      			if (this.model) {
-      				this.createPivotData();
-      			} else {
-      				this.fetchModelData();
-      			}
-      		}));
+      		.subscribe((newValue, oldValue) => this.updateDataTableAndChart()));
 		this.observers.push(this.bindingEngine.propertyObserver(this.page_state, 'time_frame')
-      		.subscribe((newValue, oldValue) => this.fetchModelData()));
+      		.subscribe((newValue, oldValue) => this.updateDataTableAndChart()));
 		this.observers.push(this.bindingEngine.propertyObserver(this.page_state, 'company')
-      		.subscribe((newValue, oldValue) => this.fetchModelData()));
+      		.subscribe((newValue, oldValue) => this.updateDataTableAndChart()));
 	}
 
 	private setSubscribers() {
@@ -332,7 +452,7 @@ export class HomeLanding {
 			});
 			
 			graphData = table.body;
-			console.log({labels: graphLabels, data: graphData});
+			//console.log({labels: graphLabels, data: graphData});
 		}));
 	}
 

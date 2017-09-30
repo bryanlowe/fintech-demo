@@ -39,6 +39,7 @@ export class DataTableElement {
               select: 'single'
             });
             $('#data-table-container table').addClass('table-bordered');
+            $('#data-table-container table th, #data-table-container table td').css('white-space', 'nowrap');
             table.column('0:visible').order('asc').draw();
             this.events.publish('$datatableChanged', table.buttons.exportData({
               format: {

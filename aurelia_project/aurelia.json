@@ -196,6 +196,7 @@
             "path": "../scripts/vendors/pivot",
             "main": "pivot.min.js"
           },
+          "moment",
           "aurelia-binding",
           "aurelia-bootstrapper",
           "aurelia-dependency-injection",
