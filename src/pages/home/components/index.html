@@ -18,26 +18,18 @@
                     </div>
                     <div class="x_content">
                         <!-- Interactive Chart -->
-                        <!--div id="market_view_chart">
+                        <div id="market_view_chart">
                             <div class="x_panel">
                                 <div class="x_content">
                                     <data-graph graph-data.bind="graphData"></data-graph>
                                 </div>
                             </div>
-                        </div-->
+                        </div>
 
-                        <!-- Interactive Table -->
-                        <!--div id="market_view_table">
-                            <div class="x_panel">
-                                <div class="x_content">
-                                    <pivot-table table-data.bind="tableData"></pivot-table>
-                                </div>
-                            </div>
-                        </div-->
                         <div id="market_view_table">
                             <div class="x_panel">
                                 <div class="x_content">
-                                    <data-table table-data.bind="tableData" spinnerClose.bind="spinnerClose" spinnerOpen.bind="spinnerOpen"></data-table>
+                                    <data-table table-input.bind="tableInput" table-output.bind="tableOutput"></data-table>
                                 </div>
                             </div>
                         </div>
@@ -46,5 +38,4 @@
             </div>
         </div> 
     </div>
-    <load-spinner toggle.bind="spinner"></load-spinner>
 </template>

@@ -201,6 +201,11 @@
             "path": "../node_modules/pure-css-loader/dist",
             "main": "css-loader.css"
           },
+          {
+            "name": "palette",
+            "path": "../scripts/vendors/palette",
+            "main": "palette.js"
+          },
           "moment",
           "aurelia-binding",
           "aurelia-bootstrapper",

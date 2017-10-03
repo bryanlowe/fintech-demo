@@ -4,6 +4,7 @@ import {BindingEngine} from 'aurelia-binding';
 import {EventAggregator, Subscription} from 'aurelia-event-aggregator';
 import * as $ from 'jquery';
 import * as moment from 'moment';
+import * as palette from 'palette';
 
 @inject(HttpClient, BindingEngine, EventAggregator)
 export class HomeLanding { 
@@ -11,11 +12,16 @@ export class HomeLanding {
 	@bindable({ defaultBindingMode: bindingMode.twoWay }) page_state: any;
 	@bindable model: any = null;
 	@bindable graphData: any = {type: '', data: {labels: [], datasets: []}, options: {}};
-	@bindable tableData: any = {json: '', fields: [], rowLabels:[], columnLabels: [], summaries:[]}; 
+	@bindable tableInput: any = {json: '', fields: [], rowLabels:[], columnLabels: [], summaries:[]}; 
+	@bindable({ defaultBindingMode: bindingMode.twoWay }) tableOutput: any;
+	@bindable compareOptions: string[] = [];
+	@bindable({ defaultBindingMode: bindingMode.twoWay }) compareList: string[] = [];
+	@bindable({ defaultBindingMode: bindingMode.twoWay }) excludeIndustry: boolean = false;
 	private observers: any[] = [];
 	public subscriptionList: Subscription[] = []; // event subscription list
 	private pivot: any;
 	private dateFormat: any = {week: 'MMMM DD YYYY', month: 'MMMM YYYY', year: 'YYYY'};
+
 	
 	constructor(private httpClient: HttpClient, private bindingEngine: BindingEngine, private events: EventAggregator){
 		// initial page state
@@ -124,6 +130,15 @@ export class HomeLanding {
 	}
 
 	/**
+	 * Filter entry by compare list
+	 */
+	filterByCompareList(entry, replacement){
+		replacement = replacement || 'Industry';
+		if (this.compareList.length) return this.compareList.indexOf(entry) >= 0 ? entry : replacement;
+		return entry;
+	}
+
+	/**
 	 * Creates pivot data from the model
 	 */
 	private createPivotData() {
@@ -131,7 +146,13 @@ export class HomeLanding {
 		const totals = this.getTotals();
 		
 		let tempArray = this.model.map((obj) => {
-	    	return obj.dataset;
+			const result = obj.dataset;
+			if (!this.compareOptions.length) {
+				for (let i = 0, ii = result.length; i < ii; i++) {
+					if (this.compareOptions.indexOf(result[i].brand) === -1) this.compareOptions.push(result[i].brand);
+				}
+			}
+	    	return result;
 	  	});
 	  	tempArray = [].concat.apply([], tempArray);
 
@@ -205,7 +226,7 @@ export class HomeLanding {
 	private brandsharePivot(data, totals) {
 		return data.map((obj) => {
 	    	let result = [];
-	    	result[result.length] = obj.brand;
+	    	result[result.length] = this.filterByCompareList(obj.brand, 'Industry');
 	    	result[result.length] = moment(obj.last_sale_date).format(this.dateFormat[this.page_state.time_frame]);
 	    	result[result.length] = obj.units;
 	    	result[result.length] = totals[obj.last_sale_date].unit_total;
@@ -255,7 +276,7 @@ export class HomeLanding {
 	private salesgrowthPivot(data) {
 		return data.map((obj, index, arr) => {
 	    	let result = [];
-	    	result[result.length] = obj.brand;
+	    	result[result.length] = this.filterByCompareList(obj.brand, 'Industry');
 	    	result[result.length] = moment(obj.last_sale_date).format(this.dateFormat[this.page_state.time_frame]);
 	    	result[result.length] = index ? arr[index].units - arr[index - 1].units : 0;
 	    	let unitGrowth = index ? ((arr[index].units - arr[index - 1].units) / arr[index - 1].units) * 100 : 0;
@@ -303,7 +324,7 @@ export class HomeLanding {
 	private pricingPivot(data) {
 		return data.map((obj) => {
 	    	let result = [];
-	    	result[result.length] = obj.brand;
+	    	result[result.length] = this.filterByCompareList(obj.brand, 'Industry');
 	    	result[result.length] = moment(obj.last_sale_date).format(this.dateFormat[this.page_state.time_frame]);
 	    	result[result.length] = obj.units;
 	    	result[result.length] = obj.revenue;
@@ -353,7 +374,7 @@ export class HomeLanding {
 	private rankingPivot(data) {
 		data = data.map((obj, index, arr) => {
 	    	let result = [];
-	    	result[result.length] = obj.brand;
+	    	result[result.length] = this.filterByCompareList(obj.brand, 'Industry');
 	    	result[result.length] = obj.units;
 	    	let unitGrowth = index ? ((arr[index].units - arr[index - 1].units) / arr[index - 1].units) * 100 : 0;
 	    	result[result.length] = isFinite(unitGrowth) ? unitGrowth : isNaN(unitGrowth) ? 0 : 100;
@@ -365,8 +386,6 @@ export class HomeLanding {
 	    	}
 	    	return result;
 	  	});
-
-	  	console.log(data);
 
 		// add unit rank
 	  	data.sort((a, b) => { return b[1] - a[1]; });
@@ -387,29 +406,66 @@ export class HomeLanding {
 	 * Updates the DataTable data
 	 */
 	private updateDataTable(dataArray, fields, rowLabels, columnLabels, summaries){
-		this.tableData.json = JSON.stringify(dataArray);
-		this.tableData.fields = fields;
-		this.tableData.rowLabels = rowLabels;
-		this.tableData.columnLabels = columnLabels;
-		this.tableData.summaries = summaries;
+		this.tableInput.json = JSON.stringify(dataArray);
+		this.tableInput.fields = fields;
+		this.tableInput.rowLabels = rowLabels;
+		this.tableInput.columnLabels = columnLabels;
+		this.tableInput.summaries = summaries;
 	}
 
 	/**
 	 * Updates the DataGraph data
 	 */
 	private updateDataGraph(){
+		const chart = this.createChartInput();
+		let data = {};
+		data['labels'] = chart.headers;
+		data['datasets'] = [];
 		if(this.page_state.graph_type === 'line'){
 			this.graphData.type = 'line';
-			this.graphData.options = this.model.line_graph_data.options;
-			this.graphData.data = this.model.line_graph_data.data;
+			this.graphData.options = {responsive: true};
+
+			// Create the graph data
+			for(let i = 0, ii = chart.data.length; i < ii; i++){
+				let dataset = {};
+				dataset['fill'] = false;
+				dataset['label'] = chart.labels[i];
+				dataset['data'] = chart.data[i];
+				dataset['backgroundColor'] = chart.colors[i];
+				dataset['borderColor'] = chart.colors[i];
+				data['datasets'].push(dataset);
+			}
+			this.graphData.data = data;
 		} else if(this.page_state.graph_type === 'bar'){
 			this.graphData.type = 'bar';
-			this.graphData.options = this.model.bar_graph_data.options;
-			this.graphData.data = this.model.bar_graph_data.data;
+			this.graphData.options = {responsive: true, scales: {yAxes: [{ticks: {beginAtZero: true}}]}};
+
+			// Create the graph data
+			for(let i = 0, ii = chart.data.length; i < ii; i++){
+			    let dataset = {};
+			    dataset['label'] = chart.labels[i];
+			    dataset['data'] = chart.data[i];
+			    dataset['backgroundColor'] = chart.colors[i];
+			    data['datasets'].push(dataset);
+			}
+			this.graphData.data = data;
 		} else if(this.page_state.graph_type === 'pie'){
 			this.graphData.type = 'pie';
-			this.graphData.options = this.model.pie_graph_data.options;
-			this.graphData.data = this.model.pie_graph_data.data;
+			this.graphData.options = {responsive: true, legend: false};
+			data['labels'] = [];
+			let dataset = {data: [], backgroundColor: []}
+			dataset.backgroundColor = chart.colors;
+
+			// Create the graph data
+			var totals = [];
+			for(var i = 0, ii = chart.data.length; i < ii; i++){
+			    // Create the graph labels
+			    data['labels'].push(chart.labels[i]);
+			    totals.push(chart.data[i].reduce((a, b) => { return a + b; }, 0))
+			}
+			dataset.data = totals;
+			data['datasets'].push(dataset);
+			this.graphData.data = data;
 		}
 	}
 
@@ -423,8 +479,8 @@ export class HomeLanding {
 			.then(response => response.json())
 			.then(data => {_class.model = data})
 			.then(() => {
-				this.createPivotData();
 				this.spinnerClose();
+				this.createPivotData();
 			});
 	}
 
@@ -432,6 +488,10 @@ export class HomeLanding {
 	 * Creates the subscriber list
 	 */
 	private setObservers(){
+		this.observers.push(this.bindingEngine.propertyObserver(this, 'tableOutput')
+      		.subscribe((newValue, oldValue) => this.updateDataGraph()));
+		this.observers.push(this.bindingEngine.propertyObserver(this.page_state, 'graph_type')
+      		.subscribe((newValue, oldValue) => this.updateDataGraph()));
 		this.observers.push(this.bindingEngine.propertyObserver(this.page_state, 'model')
       		.subscribe((newValue, oldValue) => this.updateDataTableAndChart()));
 		this.observers.push(this.bindingEngine.propertyObserver(this.page_state, 'time_frame')
@@ -440,42 +500,46 @@ export class HomeLanding {
       		.subscribe((newValue, oldValue) => this.updateDataTableAndChart()));
 	}
 
-	private setSubscribers() {
-		this.subscriptionList.push(this.events.subscribe('$datatableChanged', table => { 
-			let graphData = [],
-				graphLabels = [];
-			table.body.forEach((row) => {
-				let tempLabel = [],
-					foundAllLabels = false;
-				while (!foundAllLabels && row.length) {
-					let entry = row.shift();
-					if (isNaN(entry)) {
-						tempLabel.push(entry);
-					} else {
-						row.unshift(entry);
-						foundAllLabels = true;
-					}
+	private createChartInput() {
+		this.spinnerOpen();
+		let graphData = [],
+			graphHeaders = [],
+			graphLabels = [],
+			colors = [];
+		this.tableOutput.body.forEach((row) => {
+			let tempLabel = [],
+				foundAllLabels = false;
+			while (!foundAllLabels && row.length) {
+				let entry = row.shift();
+				if (isNaN(entry)) {
+					tempLabel.push(entry);
+				} else {
+					row.unshift(entry);
+					foundAllLabels = true;
 				}
-				graphLabels.push(tempLabel.join(':'));
-			});
-			
-			graphData = table.body;
-			//console.log({labels: graphLabels, data: graphData});
-		}));
+			}
+			graphLabels.push(tempLabel.join(':'));
+		});
+		
+		graphData = this.tableOutput.body;
+
+		graphHeaders = this.tableOutput.header.slice(1, this.tableOutput.header.length);
+
+		// add colors
+		colors = palette('tol-rainbow', graphLabels.length).map(function(hex) {
+		    return '#' + hex;
+		});
+		this.spinnerClose();
+		return {labels: graphLabels, data: graphData, headers: graphHeaders, colors: colors};
 	}
 
 	/**
 	 * Initialize create observers and subscribers
 	 */
 	attached(){
+		this.setObservers();
 		// initial model data fetch
-	    this.fetchModelData()
-	    	.then(() => {
-	    		this.setObservers();
-	    	})
-	    	.then(() => {
-	    		this.setSubscribers()
-	    	});
+	    this.fetchModelData();
 
 	}
 
@@ -485,9 +549,6 @@ export class HomeLanding {
 	detached(){
 		for(let i = 0, ii = this.observers.length; i < ii; i++){
 			this.observers[i].dispose();
-		}
-		for(let i = 0, ii = this.subscriptionList.length; i < ii; i++){
-			this.subscriptionList[i].dispose();
 		}
 	}
 }

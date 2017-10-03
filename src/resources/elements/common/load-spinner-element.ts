@@ -2,6 +2,7 @@ import {customElement} from 'aurelia-framework';
 import {bindable, inject, useView} from 'aurelia-framework'; 
 import {BindingEngine} from 'aurelia-binding';
 import {EventAggregator, Subscription} from 'aurelia-event-aggregator';
+import * as $ from 'jquery';
  
 @customElement('load-spinner')
 @useView('./load-spinner-element.html')
@@ -17,8 +18,8 @@ export class LoadSpinnerElement {
 
   attached(){
     // subscribe to spinner toggle changes
-    this.subscriptionList.push(this.events.subscribe('$openSpinner', () => this.toggle = true ));
-    this.subscriptionList.push(this.events.subscribe('$closeSpinner', () => this.toggle = false ));
+    this.subscriptionList.push(this.events.subscribe('$openSpinner', () => $('#load-spinner').show() ));
+    this.subscriptionList.push(this.events.subscribe('$closeSpinner', () => $('#load-spinner').hide() ));
   }
 
   detached(){
