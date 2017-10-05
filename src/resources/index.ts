@@ -6,6 +6,7 @@ export function configure(config: FrameworkConfiguration) {
   	'./elements/common/load-spinner-element',
   	'./elements/market-view/data-graph-element',
   	'./elements/market-view/data-table-element',
+  	'./elements/market-view/data-control-element',
   	'./elements/market-view/pivot-table-element',
   ]);
 }

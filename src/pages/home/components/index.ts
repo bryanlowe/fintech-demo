@@ -9,13 +9,15 @@ import * as palette from 'palette';
 @inject(HttpClient, BindingEngine, EventAggregator)
 export class HomeLanding { 
 	private self = this; // this object has to be saved in order to access class properties from callbacks
-	@bindable({ defaultBindingMode: bindingMode.twoWay }) page_state: any;
+	@bindable({ defaultBindingMode: bindingMode.twoWay }) pageState: any;
 	@bindable model: any = null;
 	@bindable graphData: any = {type: '', data: {labels: [], datasets: []}, options: {}};
 	@bindable tableInput: any = {json: '', fields: [], rowLabels:[], columnLabels: [], summaries:[]}; 
 	@bindable({ defaultBindingMode: bindingMode.twoWay }) tableOutput: any;
 	@bindable compareOptions: string[] = [];
 	@bindable({ defaultBindingMode: bindingMode.twoWay }) compareList: string[] = [];
+	@bindable({ defaultBindingMode: bindingMode.twoWay }) dataTypes: string[] = [];
+	@bindable({ defaultBindingMode: bindingMode.twoWay }) filterList: string[] = [];
 	@bindable({ defaultBindingMode: bindingMode.twoWay }) excludeIndustry: boolean = false;
 	private observers: any[] = [];
 	public subscriptionList: Subscription[] = []; // event subscription list
@@ -25,7 +27,7 @@ export class HomeLanding {
 	
 	constructor(private httpClient: HttpClient, private bindingEngine: BindingEngine, private events: EventAggregator){
 		// initial page state
-		this.page_state = {
+		this.pageState = {
 			model: 'brandshare',
 			time_frame: 'week',
 			data_type: 'revenue',
@@ -40,49 +42,6 @@ export class HomeLanding {
 	        .useStandardConfiguration()
 	        .withBaseUrl('/');
 	    });
-	}
-
-	/**
-	 * Update the page state's model
-	 */
-	updatePageModel(model){
-		this.page_state.model = model;
-	}
-
-	/**
-	 * Update the page state's graph type
-	 */
-	updatePageGraphType(graph_type){
-		this.page_state.graph_type = graph_type;
-		this.updateDataGraph();
-	}
-
-	/**
-	 * Update the page state's time frame
-	 */
-	updatePageTimeFrame(time_frame){
-		this.page_state.time_frame = time_frame;
-	}
-
-	/**
-	 * Update the page state's data type
-	 */
-	updatePageDataType(data_type){
-		this.page_state.data_type = data_type;
-	}
-
-	/**
-	 * Update the page state's data format
-	 */
-	updatePageDataFormat(data_format){
-		this.page_state.data_format = data_format;
-	}
-
-	/**
-	 * Update the page state's company
-	 */
-	updatePageCompany(company){
-		this.page_state.company = company;
 	}
 
 	/**
@@ -142,6 +101,9 @@ export class HomeLanding {
 	 * Creates pivot data from the model
 	 */
 	private createPivotData() {
+		this.dataTypes = [];
+		this.filterList = [];
+
 		// Create the dataArray
 		const totals = this.getTotals();
 		
@@ -161,16 +123,16 @@ export class HomeLanding {
 	  	let defaultRowLabels = ['Brand'];
 	  	let defaultColumnLabels = ['Date'];
 	  	let defaultSummaries = ['Revenue'];
-	  	if (this.page_state.model === 'brandshare') {
+	  	if (this.pageState.model === 'brandshare') {
 	  		dataLabels = this.brandshareFieldDefs(product);
 	  		dataArray = this.brandsharePivot(tempArray, totals);
-	  	} else if (this.page_state.model === 'salesgrowth') {
+	  	} else if (this.pageState.model === 'salesgrowth') {
 	  		dataLabels = this.salesgrowthFieldDefs(product);
 	  		dataArray = this.salesgrowthPivot(tempArray);
-	  	} else if (this.page_state.model === 'pricing') {
+	  	} else if (this.pageState.model === 'pricing') {
 	  		dataLabels = this.pricingFieldDefs(product);
 	  		dataArray = this.pricingPivot(tempArray);
-	  	} else if (this.page_state.model === 'ranking') {
+	  	} else if (this.pageState.model === 'ranking') {
 	  		dataLabels = this.rankingFieldDefs(product);
 	  		dataArray = this.rankingPivot(tempArray);
 	  		defaultRowLabels = ['Revenue Rank', 'Unit Rank', 'Brand'];
@@ -178,8 +140,13 @@ export class HomeLanding {
 	  		defaultColumnLabels = [];
 	  	}
 
-	  	if (this.page_state.model !== 'ranking') {
+	  	if (this.pageState.model !== 'ranking') {
 	  		dataArray.sort(this.sortDataArray);
+	  	}
+
+	  	if (this.excludeIndustry) {
+	  		const brandIndex = this.pageState.model !== 'ranking' ? 0 : 2;
+	  		dataArray = dataArray.filter((item) => item[brandIndex] !== 'Industry');
 	  	}
        
 	  	dataArray = [dataLabels.columns].concat(dataArray);
@@ -192,6 +159,7 @@ export class HomeLanding {
 	 * @return {object}
 	 */
 	private brandshareFieldDefs(product) {
+		this.dataTypes = ['Revenue', 'Revenue Percentage', 'Units', 'Units Percentage'];
 		let fieldDefinitions = [
 	  		{name: 'Brand', type: 'string', filterable: true},
         	{name: 'Date', type: 'string', filterable: true, rowLabelable: false, columnLabelable: true, sortFunction: (a, b) => { return (new Date(a)).getTime() - (new Date(b)).getTime(); }},
@@ -212,6 +180,7 @@ export class HomeLanding {
 	  	for(let i = 0, ii = product.length; i < ii; i++) {
 	  		columns[columns.length] = product[i].spec_type;
         	fieldDefinitions.push({name: product[i].spec_type,  type: 'string', filterable: true});
+        	this.filterList.push(product[i].spec_type);
 	  	}
 
 	  	return {fieldDefinitions: fieldDefinitions, columns: columns};
@@ -227,7 +196,7 @@ export class HomeLanding {
 		return data.map((obj) => {
 	    	let result = [];
 	    	result[result.length] = this.filterByCompareList(obj.brand, 'Industry');
-	    	result[result.length] = moment(obj.last_sale_date).format(this.dateFormat[this.page_state.time_frame]);
+	    	result[result.length] = moment(obj.last_sale_date).format(this.dateFormat[this.pageState.time_frame]);
 	    	result[result.length] = obj.units;
 	    	result[result.length] = totals[obj.last_sale_date].unit_total;
 	    	result[result.length] = obj.revenue;
@@ -245,6 +214,7 @@ export class HomeLanding {
 	 * @return {object}
 	 */
 	private salesgrowthFieldDefs(product) {
+		this.dataTypes = ['Revenue', 'Revenue Percentage', 'Units', 'Units Percentage'];
 		let fieldDefinitions = [
 	  		{name: 'Brand', type: 'string', filterable: true},
         	{name: 'Date', type: 'string', filterable: true, rowLabelable: false, columnLabelable: true, sortFunction: (a, b) => { return (new Date(a)).getTime() - (new Date(b)).getTime(); }},
@@ -263,6 +233,7 @@ export class HomeLanding {
 	  	for(let i = 0, ii = product.length; i < ii; i++) {
 	  		columns[columns.length] = product[i].spec_type;
         	fieldDefinitions.push({name: product[i].spec_type,  type: 'string', filterable: true});
+        	this.filterList.push(product[i].spec_type);
 	  	}
 
 	  	return {fieldDefinitions: fieldDefinitions, columns: columns};
@@ -277,7 +248,7 @@ export class HomeLanding {
 		return data.map((obj, index, arr) => {
 	    	let result = [];
 	    	result[result.length] = this.filterByCompareList(obj.brand, 'Industry');
-	    	result[result.length] = moment(obj.last_sale_date).format(this.dateFormat[this.page_state.time_frame]);
+	    	result[result.length] = moment(obj.last_sale_date).format(this.dateFormat[this.pageState.time_frame]);
 	    	result[result.length] = index ? arr[index].units - arr[index - 1].units : 0;
 	    	let unitGrowth = index ? ((arr[index].units - arr[index - 1].units) / arr[index - 1].units) * 100 : 0;
 	    	result[result.length] = isFinite(unitGrowth) ? unitGrowth : isNaN(unitGrowth) ? 0 : 100;
@@ -297,6 +268,7 @@ export class HomeLanding {
 	 * @return {object}
 	 */
 	private pricingFieldDefs(product) {
+		this.dataTypes = ['Revenue', 'Units'];
 		let fieldDefinitions = [
 	  		{name: 'Brand', type: 'string', filterable: true},
         	{name: 'Date', type: 'string', filterable: true, rowLabelable: false, columnLabelable: true, sortFunction: (a, b) => { return (new Date(a)).getTime() - (new Date(b)).getTime(); }},
@@ -311,6 +283,7 @@ export class HomeLanding {
 	  	for(let i = 0, ii = product.length; i < ii; i++) {
 	  		columns[columns.length] = product[i].spec_type;
         	fieldDefinitions.push({name: product[i].spec_type,  type: 'string', filterable: true});
+        	this.filterList.push(product[i].spec_type);
 	  	}
 
 	  	return {fieldDefinitions: fieldDefinitions, columns: columns};
@@ -325,7 +298,7 @@ export class HomeLanding {
 		return data.map((obj) => {
 	    	let result = [];
 	    	result[result.length] = this.filterByCompareList(obj.brand, 'Industry');
-	    	result[result.length] = moment(obj.last_sale_date).format(this.dateFormat[this.page_state.time_frame]);
+	    	result[result.length] = moment(obj.last_sale_date).format(this.dateFormat[this.pageState.time_frame]);
 	    	result[result.length] = obj.units;
 	    	result[result.length] = obj.revenue;
 	    	for(let i = 0, ii = obj.product.length; i < ii; i++){
@@ -341,6 +314,7 @@ export class HomeLanding {
 	 * @return {object}
 	 */
 	private rankingFieldDefs(product) {
+		this.dataTypes = ['Revenue Sales', 'Revenue Change', 'Unit Sales', 'Unit Change'];
 		let fieldDefinitions = [
 	  		{name: 'Revenue Rank', type: 'float', filterable: true},
 	  		{name: 'Unit Rank', type: 'float', filterable: true},
@@ -361,6 +335,7 @@ export class HomeLanding {
 	  	for(let i = 0, ii = product.length; i < ii; i++) {
 	  		columns[columns.length] = product[i].spec_type;
         	fieldDefinitions.push({name: product[i].spec_type,  type: 'string', filterable: true});
+        	this.filterList.push(product[i].spec_type);
 	  	}
 
 	  	return {fieldDefinitions: fieldDefinitions, columns: columns};
@@ -418,10 +393,11 @@ export class HomeLanding {
 	 */
 	private updateDataGraph(){
 		const chart = this.createChartInput();
+		console.log(chart);
 		let data = {};
 		data['labels'] = chart.headers;
 		data['datasets'] = [];
-		if(this.page_state.graph_type === 'line'){
+		if(this.pageState.graph_type === 'line'){
 			this.graphData.type = 'line';
 			this.graphData.options = {responsive: true};
 
@@ -436,7 +412,7 @@ export class HomeLanding {
 				data['datasets'].push(dataset);
 			}
 			this.graphData.data = data;
-		} else if(this.page_state.graph_type === 'bar'){
+		} else if(this.pageState.graph_type === 'bar'){
 			this.graphData.type = 'bar';
 			this.graphData.options = {responsive: true, scales: {yAxes: [{ticks: {beginAtZero: true}}]}};
 
@@ -449,7 +425,7 @@ export class HomeLanding {
 			    data['datasets'].push(dataset);
 			}
 			this.graphData.data = data;
-		} else if(this.page_state.graph_type === 'pie'){
+		} else if(this.pageState.graph_type === 'pie'){
 			this.graphData.type = 'pie';
 			this.graphData.options = {responsive: true, legend: false};
 			data['labels'] = [];
@@ -475,7 +451,7 @@ export class HomeLanding {
 	private fetchModelData() {
 		const _class = this;
 		this.spinnerOpen();
-		return this.httpClient.fetch(this.page_state.model+'/'+this.page_state.time_frame+'/'+this.page_state.data_type+'/'+this.page_state.data_format+'/'+this.page_state.company)
+		return this.httpClient.fetch(this.pageState.model+'/'+this.pageState.time_frame+'/'+this.pageState.data_type+'/'+this.pageState.data_format+'/'+this.pageState.company)
 			.then(response => response.json())
 			.then(data => {_class.model = data})
 			.then(() => {
@@ -490,13 +466,15 @@ export class HomeLanding {
 	private setObservers(){
 		this.observers.push(this.bindingEngine.propertyObserver(this, 'tableOutput')
       		.subscribe((newValue, oldValue) => this.updateDataGraph()));
-		this.observers.push(this.bindingEngine.propertyObserver(this.page_state, 'graph_type')
+		this.observers.push(this.bindingEngine.propertyObserver(this.pageState, 'graph_type')
       		.subscribe((newValue, oldValue) => this.updateDataGraph()));
-		this.observers.push(this.bindingEngine.propertyObserver(this.page_state, 'model')
+		this.observers.push(this.bindingEngine.propertyObserver(this.pageState, 'model')
       		.subscribe((newValue, oldValue) => this.updateDataTableAndChart()));
-		this.observers.push(this.bindingEngine.propertyObserver(this.page_state, 'time_frame')
+		this.observers.push(this.bindingEngine.propertyObserver(this.pageState, 'time_frame')
       		.subscribe((newValue, oldValue) => this.updateDataTableAndChart()));
-		this.observers.push(this.bindingEngine.propertyObserver(this.page_state, 'company')
+		this.observers.push(this.bindingEngine.propertyObserver(this, 'compareList')
+      		.subscribe((newValue, oldValue) => this.updateDataTableAndChart()));
+		this.observers.push(this.bindingEngine.propertyObserver(this, 'excludeIndustry')
       		.subscribe((newValue, oldValue) => this.updateDataTableAndChart()));
 	}
 
@@ -505,25 +483,14 @@ export class HomeLanding {
 		let graphData = [],
 			graphHeaders = [],
 			graphLabels = [],
-			colors = [];
-		this.tableOutput.body.forEach((row) => {
-			let tempLabel = [],
-				foundAllLabels = false;
-			while (!foundAllLabels && row.length) {
-				let entry = row.shift();
-				if (isNaN(entry)) {
-					tempLabel.push(entry);
-				} else {
-					row.unshift(entry);
-					foundAllLabels = true;
-				}
-			}
-			graphLabels.push(tempLabel.join(':'));
+			colors = [],
+			rows = this.tableOutput.data.body;
+		rows.forEach((row) => {
+			graphLabels.push(row.slice(0, this.tableOutput.skipCols).join(':'));
+			graphData.push(row.slice(this.tableOutput.skipCols, row.length));
 		});
-		
-		graphData = this.tableOutput.body;
 
-		graphHeaders = this.tableOutput.header.slice(1, this.tableOutput.header.length);
+		graphHeaders = this.tableOutput.data.header.slice(this.tableOutput.skipCols, this.tableOutput.data.header.length);
 
 		// add colors
 		colors = palette('tol-rainbow', graphLabels.length).map(function(hex) {

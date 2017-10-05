@@ -179,6 +179,13 @@
           },
           "jquery",
           {
+            "name": "bootstrap",
+            "path": "../node_modules/bootstrap/dist",
+            "main": "js/bootstrap.min.js",
+            "resources": ["css/bootstrap.min.css", "css/bootstrap-theme.min.css"],
+            "deps": ["jquery"]
+          },
+          {
             "name": "chart.js",
             "path": "../node_modules/chart.js/dist",
             "main": "Chart.min.js"

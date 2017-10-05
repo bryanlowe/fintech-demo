@@ -17,7 +17,14 @@
                         <div class="clearfix"></div>
                     </div>
                     <div class="x_content">
-                        <!-- Interactive Chart -->
+                        <div id="market_view_controls">
+                            <div class="x_panel">
+                                <div class="x_content">
+                                    <data-control page-state.bind="pageState" compare-list.bind="compareList" compare-options.bind="compareOptions" exclude-industry.bind="excludeIndustry" data-types.bind="dataTypes" filter-list.bind="filterList"></data-control>
+                                </div>
+                            </div>
+                        </div>
+                        
                         <div id="market_view_chart">
                             <div class="x_panel">
                                 <div class="x_content">

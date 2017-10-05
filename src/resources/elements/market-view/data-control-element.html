@@ -1,0 +1,106 @@
+<template>
+	<div id="control-container" class="row center-block">
+		<div class="pull-left" style="margin-right: 15px;">
+			<div class="btn-group">
+              	<button type="button" class="btn btn-dark">Data Model</button>
+              	<button type="button" class="btn btn-dark dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
+                	<span class="caret"></span>
+                	<span class="sr-only">Toggle Dropdown</span>
+              	</button>
+              	<div class="btn-group-vertical dropdown-menu" data-toggle="buttons" role="menu">
+	                <label class="btn btn-dark active">
+			         	<input type="radio" name="data_model" value="brandshare" id="brandshareModel"> Brand Share
+			        </label>
+			        <label class="btn btn-dark">
+			          	<input type="radio" name="data_model" value="salesgrowth" id="salesgrowthModel"> Sales Growth
+			        </label>
+			        <label class="btn btn-dark">
+			          	<input type="radio" name="data_model" value="pricing" id="pricingModel"> Pricing
+			        </label>
+			        <label class="btn btn-dark">
+			          	<input type="radio" name="data_model" value="ranking" id="rankingModel"> Ranking
+			        </label>
+	            </div>	
+            </div>
+		</div> 
+
+		<div class="pull-left" style="margin-right: 15px;">
+			<div id="dataTypeList" class="dropdown btn-group">
+              	<button type="button" class="btn btn-dark">Data Type</button>
+              	<button type="button" class="btn btn-dark dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
+                	<span class="caret"></span>
+                	<span class="sr-only">Toggle Dropdown</span>
+              	</button>
+              	<div class="btn-group-vertical dropdown-menu" data-toggle="buttons" role="menu">
+              		<label if.bind="pageState.model === 'ranking'" class="btn btn-dark active" repeat.for="type of dataTypes">
+              			<input type="checkbox" name="data_type" value="${type}" checked> ${type}
+              		</label>
+              		<label if.bind="pageState.model !== 'ranking'" class="btn btn-dark" class.bind="$first ? 'active' : ''" repeat.for="type of dataTypes">
+              			<input type="radio" name="data_type" value="${type}"> ${type}
+              		</label>
+	            </div>	
+            </div>
+		</div>
+
+		<div class="pull-left" style="margin-right: 15px;">
+			<div id="filterList" class="dropdown keep-open btn-group">
+              	<button type="button" class="dLabel btn btn-dark">Filter</button>
+              	<button type="button" class="dToggle btn btn-dark dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
+                	<span class="caret"></span>
+                	<span class="sr-only">Toggle Dropdown</span>
+              	</button>
+              	<div class="btn-group-vertical dropdown-menu" data-toggle="buttons" role="menu">
+              		<label class="btn btn-dark" repeat.for="item of filterList">
+              			<input type="checkbox" name="filter_item" value="${item}"> ${item}
+              		</label>
+	            </div>	
+            </div>
+		</div>
+
+		<div class="pull-left" style="margin-right: 15px;">
+			<div id="compareEntries" class="dropdown keep-open btn-group">
+              	<button type="button" class="dLabel btn btn-dark">Compare</button>
+              	<button type="button" class="dToggle btn btn-dark dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
+                	<span class="caret"></span>
+                	<span class="sr-only">Toggle Dropdown</span>
+              	</button>
+              	<div class="btn-group-vertical dropdown-menu" data-toggle="buttons" role="menu">
+              		<label class="btn btn-dark active">
+			          	<input type="checkbox" name="industry" checked> Industry
+			        </label>
+              		<label class="btn btn-dark" repeat.for="item of compareOptions">
+              			<input type="checkbox" name="compare_option" value="${item}"> ${item}
+              		</label>
+	            </div>	
+            </div>
+		</div> 
+
+		<div class="pull-left" style="margin-right: 15px;">
+			<div class="btn-group" data-toggle="buttons">
+		        <label class="btn btn-dark active">
+		          	<input type="radio" name="graph_type" value="line" id="lineGraphType"> Line
+		        </label>
+		        <label class="btn btn-dark">
+		          	<input type="radio" name="graph_type" value="bar" id="barGraphType"> Bar
+		        </label>
+		        <label class="btn btn-dark">
+		          	<input type="radio" name="graph_type" value="pie" id="pieGraphType"> Pie
+		        </label>
+		    </div>
+		</div>
+
+		<div class="pull-left" style="margin-right: 15px;">
+			<div class="btn-group" data-toggle="buttons">
+		        <label class="btn btn-dark active">
+		         	<input type="radio" name="time_frame" value="week" id="weekTimeFrame"> Week
+		        </label>
+		        <label class="btn btn-dark">
+		          	<input type="radio" name="time_frame" value="month" id="monthTimeFrame"> Month
+		        </label>
+		        <label class="btn btn-dark">
+		          	<input type="radio" name="time_frame" value="year" id="yearTimeFrame"> Year
+		        </label>
+		    </div>
+		</div>
+	</div>
+</template>

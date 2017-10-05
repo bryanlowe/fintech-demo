@@ -17,6 +17,7 @@
     "aurelia-bootstrapper": "^1.0.0",
     "aurelia-fetch-client": "^1.1.1",
     "bluebird": "^3.4.1",
+    "bootstrap": "^3.3.7",
     "chart.js": "^2.6.0",
     "connect-wwwhisper": "*",
     "datatables.net": "^1.10.15",

@@ -18,6 +18,7 @@ export class DataTableElement {
   @bindable({ defaultBindingMode: bindingMode.twoWay }) tableOutput: any;  
   private subscription: any = null;
   private dataTable: any = null;
+  private skipCols = 1;
 
   constructor(private bindingEngine: BindingEngine, private events: EventAggregator){}
 
@@ -37,7 +38,7 @@ export class DataTableElement {
   }
 
   private outputData() {
-    this.tableOutput = this.dataTable.buttons.exportData({
+    const data = this.dataTable.buttons.exportData({
       format: {
         body: (innerHtml, rowIndex, columnIndex, cellNode) => {
           const value = Number(innerHtml.replace('$', '').replace('%', '').replace('--', '0').replace(/,/g, ''));
@@ -45,6 +46,8 @@ export class DataTableElement {
         }
       }
     });
+
+    this.tableOutput = {data: data, skipCols: this.skipCols};
   }
 
   private setupPivot(input){

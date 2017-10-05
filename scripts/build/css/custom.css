@@ -4130,3 +4130,8 @@ ul.notifications {
   border: 1px solid #e5e5e5; }
 
 /** /Dropzone.js **/
+.btn.active {
+  color: #fff;
+  background-color: #169F85;
+  border-color: #398439;
+}
