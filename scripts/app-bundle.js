@@ -255,6 +255,7 @@ define('pages/home/components/index',["require", "exports", "aurelia-fetch-clien
             this.dataTypes = [];
             this.filterList = [];
             this.excludeIndustry = false;
+            this.displayAllRows = false;
             this.observers = [];
             this.subscriptionList = [];
             this.dateFormat = { week: 'MMMM DD YYYY', month: 'MMMM YYYY', year: 'YYYY' };
@@ -534,7 +535,6 @@ define('pages/home/components/index',["require", "exports", "aurelia-fetch-clien
         };
         HomeLanding.prototype.updateDataGraph = function () {
             var chart = this.createChartInput();
-            console.log(chart);
             var data = {};
             data['labels'] = chart.headers;
             data['datasets'] = [];
@@ -551,6 +551,10 @@ define('pages/home/components/index',["require", "exports", "aurelia-fetch-clien
                     data['datasets'].push(dataset);
                 }
                 this.graphData.data = data;
+                if (data['datasets'].length > 20) {
+                    var legendOptions = { display: false };
+                    this.graphData.options['legend'] = legendOptions;
+                }
             }
             else if (this.pageState.graph_type === 'bar') {
                 this.graphData.type = 'bar';
@@ -563,6 +567,10 @@ define('pages/home/components/index',["require", "exports", "aurelia-fetch-clien
                     data['datasets'].push(dataset);
                 }
                 this.graphData.data = data;
+                if (data['datasets'].length > 20) {
+                    var legendOptions = { display: false };
+                    this.graphData.options['legend'] = legendOptions;
+                }
             }
             else if (this.pageState.graph_type === 'pie') {
                 this.graphData.type = 'pie';
@@ -608,14 +616,14 @@ define('pages/home/components/index',["require", "exports", "aurelia-fetch-clien
                 .subscribe(function (newValue, oldValue) { return _this.updateDataTableAndChart(); }));
         };
         HomeLanding.prototype.createChartInput = function () {
-            var _this = this;
             this.spinnerOpen();
+            var skipLimit = this.filterList.length + 1;
             var graphData = [], graphHeaders = [], graphLabels = [], colors = [], rows = this.tableOutput.data.body;
             rows.forEach(function (row) {
-                graphLabels.push(row.slice(0, _this.tableOutput.skipCols).join(':'));
-                graphData.push(row.slice(_this.tableOutput.skipCols, row.length));
+                graphLabels.push(row.slice(0, skipLimit).join(':'));
+                graphData.push(row.slice(skipLimit, row.length));
             });
-            graphHeaders = this.tableOutput.data.header.slice(this.tableOutput.skipCols, this.tableOutput.data.header.length);
+            graphHeaders = this.tableOutput.data.header.slice(skipLimit, this.tableOutput.data.header.length);
             colors = palette('tol-rainbow', graphLabels.length).map(function (hex) {
                 return '#' + hex;
             });
@@ -671,6 +679,10 @@ define('pages/home/components/index',["require", "exports", "aurelia-fetch-clien
             aurelia_framework_1.bindable({ defaultBindingMode: aurelia_framework_1.bindingMode.twoWay }),
             __metadata("design:type", Boolean)
         ], HomeLanding.prototype, "excludeIndustry", void 0);
+        __decorate([
+            aurelia_framework_1.bindable({ defaultBindingMode: aurelia_framework_1.bindingMode.twoWay }),
+            __metadata("design:type", Boolean)
+        ], HomeLanding.prototype, "displayAllRows", void 0);
         HomeLanding = __decorate([
             aurelia_framework_1.inject(aurelia_fetch_client_1.HttpClient, aurelia_binding_1.BindingEngine, aurelia_event_aggregator_1.EventAggregator),
             __metadata("design:paramtypes", [aurelia_fetch_client_1.HttpClient, aurelia_binding_1.BindingEngine, aurelia_event_aggregator_1.EventAggregator])
@@ -678,49 +690,6 @@ define('pages/home/components/index',["require", "exports", "aurelia-fetch-clien
         return HomeLanding;
     }());
     exports.HomeLanding = HomeLanding;
-});
-
-var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
-};
-var __metadata = (this && this.__metadata) || function (k, v) {
-    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
-};
-define('resources/elements/common/load-spinner-element',["require", "exports", "aurelia-framework", "aurelia-framework", "aurelia-binding", "aurelia-event-aggregator", "jquery"], function (require, exports, aurelia_framework_1, aurelia_framework_2, aurelia_binding_1, aurelia_event_aggregator_1, $) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    var LoadSpinnerElement = (function () {
-        function LoadSpinnerElement(bindingEngine, events) {
-            this.bindingEngine = bindingEngine;
-            this.events = events;
-            this.toggle = false;
-            this.subscriptionList = [];
-        }
-        LoadSpinnerElement.prototype.attached = function () {
-            this.subscriptionList.push(this.events.subscribe('$openSpinner', function () { return $('#load-spinner').show(); }));
-            this.subscriptionList.push(this.events.subscribe('$closeSpinner', function () { return $('#load-spinner').hide(); }));
-        };
-        LoadSpinnerElement.prototype.detached = function () {
-            for (var i = 0, ii = this.subscriptionList.length; i < ii; i++) {
-                this.subscriptionList[i].dispose();
-            }
-        };
-        __decorate([
-            aurelia_framework_2.bindable,
-            __metadata("design:type", Boolean)
-        ], LoadSpinnerElement.prototype, "toggle", void 0);
-        LoadSpinnerElement = __decorate([
-            aurelia_framework_1.customElement('load-spinner'),
-            aurelia_framework_2.useView('./load-spinner-element.html'),
-            aurelia_framework_2.inject(aurelia_binding_1.BindingEngine, aurelia_event_aggregator_1.EventAggregator),
-            __metadata("design:paramtypes", [aurelia_binding_1.BindingEngine, aurelia_event_aggregator_1.EventAggregator])
-        ], LoadSpinnerElement);
-        return LoadSpinnerElement;
-    }());
-    exports.LoadSpinnerElement = LoadSpinnerElement;
 });
 
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
@@ -741,6 +710,7 @@ define('resources/elements/market-view/data-control-element',["require", "export
             this.events = events;
             this.taskQueue = taskQueue;
             this.excludeIndustry = false;
+            this.displayAllRows = false;
             this.observers = [];
             this.mutationObservers = [];
         }
@@ -755,6 +725,11 @@ define('resources/elements/market-view/data-control-element',["require", "export
                 var _jqThis = event.currentTarget;
                 if ($(_jqThis).is(':checked'))
                     _this.pageState.time_frame = $(_jqThis).val();
+            });
+            $('input[type="radio"][name="display_option"]').change(function (event) {
+                var _jqThis = event.currentTarget;
+                if ($(_jqThis).is(':checked'))
+                    _this.displayAllRows = $(_jqThis).val() === 'all';
             });
             $('input[type="radio"][name="data_model"]').change(function (event) {
                 var _jqThis = event.currentTarget;
@@ -856,6 +831,10 @@ define('resources/elements/market-view/data-control-element',["require", "export
             aurelia_framework_2.bindable({ defaultBindingMode: aurelia_framework_2.bindingMode.twoWay }),
             __metadata("design:type", Boolean)
         ], DataControlElement.prototype, "excludeIndustry", void 0);
+        __decorate([
+            aurelia_framework_2.bindable({ defaultBindingMode: aurelia_framework_2.bindingMode.twoWay }),
+            __metadata("design:type", Boolean)
+        ], DataControlElement.prototype, "displayAllRows", void 0);
         DataControlElement = __decorate([
             aurelia_framework_1.customElement('data-control'),
             aurelia_framework_2.useView('./data-control-element.html'),
@@ -941,6 +920,7 @@ define('resources/elements/market-view/data-table-element',["require", "exports"
             this.bindingEngine = bindingEngine;
             this.events = events;
             this.tableInput = { json: '' };
+            this.displayAllRows = false;
             this.subscription = null;
             this.dataTable = null;
             this.skipCols = 1;
@@ -956,6 +936,10 @@ define('resources/elements/market-view/data-table-element',["require", "exports"
         };
         DataTableElement.prototype.outputData = function () {
             var data = this.dataTable.buttons.exportData({
+                modifier: {
+                    order: this.displayAllRows ? 'current' : 'index',
+                    page: this.displayAllRows ? 'all' : 'current',
+                },
                 format: {
                     body: function (innerHtml, rowIndex, columnIndex, cellNode) {
                         var value = Number(innerHtml.replace('$', '').replace('%', '').replace('--', '0').replace(/,/g, ''));
@@ -997,6 +981,8 @@ define('resources/elements/market-view/data-table-element',["require", "exports"
             var _this = this;
             this.subscription = this.bindingEngine.propertyObserver(this.tableInput, 'json')
                 .subscribe(function (newValue, oldValue) { return _this.updatePivottable(); });
+            this.subscription = this.bindingEngine.propertyObserver(this, 'displayAllRows')
+                .subscribe(function (newValue, oldValue) { return _this.outputData(); });
         };
         DataTableElement.prototype.detached = function () {
             this.subscription.dispose();
@@ -1005,6 +991,10 @@ define('resources/elements/market-view/data-table-element',["require", "exports"
             aurelia_framework_2.bindable,
             __metadata("design:type", Object)
         ], DataTableElement.prototype, "tableInput", void 0);
+        __decorate([
+            aurelia_framework_2.bindable,
+            __metadata("design:type", Boolean)
+        ], DataTableElement.prototype, "displayAllRows", void 0);
         __decorate([
             aurelia_framework_2.bindable({ defaultBindingMode: aurelia_framework_2.bindingMode.twoWay }),
             __metadata("design:type", Object)
@@ -1089,6 +1079,49 @@ define('resources/elements/market-view/pivot-table-element',["require", "exports
         return PivotTableElement;
     }());
     exports.PivotTableElement = PivotTableElement;
+});
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+define('resources/elements/common/load-spinner-element',["require", "exports", "aurelia-framework", "aurelia-framework", "aurelia-binding", "aurelia-event-aggregator", "jquery"], function (require, exports, aurelia_framework_1, aurelia_framework_2, aurelia_binding_1, aurelia_event_aggregator_1, $) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    var LoadSpinnerElement = (function () {
+        function LoadSpinnerElement(bindingEngine, events) {
+            this.bindingEngine = bindingEngine;
+            this.events = events;
+            this.toggle = false;
+            this.subscriptionList = [];
+        }
+        LoadSpinnerElement.prototype.attached = function () {
+            this.subscriptionList.push(this.events.subscribe('$openSpinner', function () { return $('#load-spinner').show(); }));
+            this.subscriptionList.push(this.events.subscribe('$closeSpinner', function () { return $('#load-spinner').hide(); }));
+        };
+        LoadSpinnerElement.prototype.detached = function () {
+            for (var i = 0, ii = this.subscriptionList.length; i < ii; i++) {
+                this.subscriptionList[i].dispose();
+            }
+        };
+        __decorate([
+            aurelia_framework_2.bindable,
+            __metadata("design:type", Boolean)
+        ], LoadSpinnerElement.prototype, "toggle", void 0);
+        LoadSpinnerElement = __decorate([
+            aurelia_framework_1.customElement('load-spinner'),
+            aurelia_framework_2.useView('./load-spinner-element.html'),
+            aurelia_framework_2.inject(aurelia_binding_1.BindingEngine, aurelia_event_aggregator_1.EventAggregator),
+            __metadata("design:paramtypes", [aurelia_binding_1.BindingEngine, aurelia_event_aggregator_1.EventAggregator])
+        ], LoadSpinnerElement);
+        return LoadSpinnerElement;
+    }());
+    exports.LoadSpinnerElement = LoadSpinnerElement;
 });
 
 (function( $ ){
@@ -1514,9 +1547,9 @@ define('text!less/mixins.css', ['module'], function(module) { module.exports = "
 define('text!less/variables.css', ['module'], function(module) { module.exports = ""; });
 define('text!pages/page-elements/site-footer.html', ['module'], function(module) { module.exports = "<template>  \r\n  <!-- footer content -->\r\n        <footer>\r\n          <div class=\"pull-right\">\r\n            Gentelella - Bootstrap Admin Template by <a href=\"https://colorlib.com\">Colorlib</a>\r\n          </div>\r\n          <div class=\"clearfix\"></div>\r\n        </footer>\r\n        <!-- /footer content -->\r\n</template>"; });
 define('text!pages/page-elements/topbar-menu.html', ['module'], function(module) { module.exports = "<template>\r\n  <!-- top navigation -->\r\n        <div class=\"top_nav\">\r\n            <div class=\"nav_menu\">\r\n                <nav>\r\n                \r\n                <ul class=\"nav navbar-nav navbar-right\">\r\n                    <li class=\"\">\r\n                    <a href=\"javascript:;\" class=\"user-profile dropdown-toggle\" data-toggle=\"dropdown\" aria-expanded=\"false\">\r\n                        <img src=\"src/img/img.jpg\" alt=\"\">John Doe\r\n                        <span class=\" fa fa-angle-down\"></span>\r\n                    </a>\r\n                    <ul class=\"dropdown-menu dropdown-usermenu pull-right\">\r\n                        <li><a href=\"javascript:;\"> Profile</a></li>\r\n                        <li>\r\n                        <a href=\"javascript:;\">\r\n                            <span class=\"badge bg-red pull-right\">50%</span>\r\n                            <span>Settings</span>\r\n                        </a>\r\n                        </li>\r\n                        <li><a href=\"javascript:;\">Help</a></li>\r\n                        <li><a href=\"login.html\"><i class=\"fa fa-sign-out pull-right\"></i> Log Out</a></li>\r\n                    </ul>\r\n                    </li>\r\n\r\n                    <li role=\"presentation\" class=\"dropdown\">\r\n                    <a href=\"javascript:;\" class=\"dropdown-toggle info-number\" data-toggle=\"dropdown\" aria-expanded=\"false\">\r\n                        <i class=\"fa fa-envelope-o\"></i>\r\n                        <span class=\"badge bg-green\">6</span>\r\n                    </a>\r\n                    <ul id=\"menu1\" class=\"dropdown-menu list-unstyled msg_list\" role=\"menu\">\r\n                        <li>\r\n                        <a>\r\n                            <span class=\"image\"><img src=\"src/img/img.jpg\" alt=\"Profile Image\" /></span>\r\n                            <span>\r\n                            <span>John Smith</span>\r\n                            <span class=\"time\">3 mins ago</span>\r\n                            </span>\r\n                            <span class=\"message\">\r\n                            Film festivals used to be do-or-die moments for movie makers. They were where...\r\n                            </span>\r\n                        </a>\r\n                        </li>\r\n                        <li>\r\n                        <a>\r\n                            <span class=\"image\"><img src=\"src/img/img.jpg\" alt=\"Profile Image\" /></span>\r\n                            <span>\r\n                            <span>John Smith</span>\r\n                            <span class=\"time\">3 mins ago</span>\r\n                            </span>\r\n                            <span class=\"message\">\r\n                            Film festivals used to be do-or-die moments for movie makers. They were where...\r\n                            </span>\r\n                        </a>\r\n                        </li>\r\n                        <li>\r\n                        <a>\r\n                            <span class=\"image\"><img src=\"src/img/img.jpg\" alt=\"Profile Image\" /></span>\r\n                            <span>\r\n                            <span>John Smith</span>\r\n                            <span class=\"time\">3 mins ago</span>\r\n                            </span>\r\n                            <span class=\"message\">\r\n                            Film festivals used to be do-or-die moments for movie makers. They were where...\r\n                            </span>\r\n                        </a>\r\n                        </li>\r\n                        <li>\r\n                        <a>\r\n                            <span class=\"image\"><img src=\"src/img/img.jpg\" alt=\"Profile Image\" /></span>\r\n                            <span>\r\n                            <span>John Smith</span>\r\n                            <span class=\"time\">3 mins ago</span>\r\n                            </span>\r\n                            <span class=\"message\">\r\n                            Film festivals used to be do-or-die moments for movie makers. They were where...\r\n                            </span>\r\n                        </a>\r\n                        </li>\r\n                        <li>\r\n                        <div class=\"text-center\">\r\n                            <a>\r\n                            <strong>See All Alerts</strong>\r\n                            <i class=\"fa fa-angle-right\"></i>\r\n                            </a>\r\n                        </div>\r\n                        </li>\r\n                    </ul>\r\n                    </li>\r\n                </ul>\r\n                </nav>\r\n            </div>\r\n            </div>\r\n            <!-- /top navigation -->        \r\n</template>"; });
-define('text!pages/home/components/index.html', ['module'], function(module) { module.exports = "<template>\r\n    <!-- sidebar menu -->\r\n    <compose router.bind=\"router\" view-model=\"pages/page-elements/sidebar-menu\"></compose>\r\n    <!-- /sidebar menu -->\r\n\r\n    <!-- top navigation -->\r\n    <compose view-model=\"pages/page-elements/topbar-menu\"></compose>\r\n    <!-- /top navigation -->\r\n\r\n    <div class=\"right_col\" role=\"main\">\r\n        <!-- market view panel -->\r\n        <div id=\"market_view\" class=\"row\">\r\n            <div class=\"col-md-12 col-sm-12 col-xs-12\">\r\n                <div class=\"x_panel\">\r\n                    <div class=\"x_title\">\r\n                        <h2 id=\"view_title\">Market View</h2>\r\n                        <div class=\"clearfix\"></div>\r\n                    </div>\r\n                    <div class=\"x_content\">\r\n                        <div id=\"market_view_controls\">\r\n                            <div class=\"x_panel\">\r\n                                <div class=\"x_content\">\r\n                                    <data-control page-state.bind=\"pageState\" compare-list.bind=\"compareList\" compare-options.bind=\"compareOptions\" exclude-industry.bind=\"excludeIndustry\" data-types.bind=\"dataTypes\" filter-list.bind=\"filterList\"></data-control>\r\n                                </div>\r\n                            </div>\r\n                        </div>\r\n                        \r\n                        <div id=\"market_view_chart\">\r\n                            <div class=\"x_panel\">\r\n                                <div class=\"x_content\">\r\n                                    <data-graph graph-data.bind=\"graphData\"></data-graph>\r\n                                </div>\r\n                            </div>\r\n                        </div>\r\n\r\n                        <div id=\"market_view_table\">\r\n                            <div class=\"x_panel\">\r\n                                <div class=\"x_content\">\r\n                                    <data-table table-input.bind=\"tableInput\" table-output.bind=\"tableOutput\"></data-table>\r\n                                </div>\r\n                            </div>\r\n                        </div>\r\n                    </div>\r\n                </div>\r\n            </div>\r\n        </div> \r\n    </div>\r\n</template>"; });
+define('text!pages/home/components/index.html', ['module'], function(module) { module.exports = "<template>\r\n    <!-- sidebar menu -->\r\n    <compose router.bind=\"router\" view-model=\"pages/page-elements/sidebar-menu\"></compose>\r\n    <!-- /sidebar menu -->\r\n\r\n    <!-- top navigation -->\r\n    <compose view-model=\"pages/page-elements/topbar-menu\"></compose>\r\n    <!-- /top navigation -->\r\n\r\n    <div class=\"right_col\" role=\"main\">\r\n        <!-- market view panel -->\r\n        <div id=\"market_view\" class=\"row\">\r\n            <div class=\"col-md-12 col-sm-12 col-xs-12\">\r\n                <div class=\"x_panel\">\r\n                    <div class=\"x_title\">\r\n                        <h2 id=\"view_title\">Market View</h2>\r\n                        <div class=\"clearfix\"></div>\r\n                    </div>\r\n                    <div class=\"x_content\">\r\n                        <div id=\"market_view_controls\">\r\n                            <div class=\"x_panel\">\r\n                                <div class=\"x_content\">\r\n                                    <data-control page-state.bind=\"pageState\" compare-list.bind=\"compareList\" compare-options.bind=\"compareOptions\" exclude-industry.bind=\"excludeIndustry\" data-types.bind=\"dataTypes\" filter-list.bind=\"filterList\" display-all-rows.bind=\"displayAllRows\"></data-control>\r\n                                </div>\r\n                            </div>\r\n                        </div>\r\n                        \r\n                        <div id=\"market_view_chart\">\r\n                            <div class=\"x_panel\">\r\n                                <div class=\"x_content\">\r\n                                    <data-graph graph-data.bind=\"graphData\"></data-graph>\r\n                                </div>\r\n                            </div>\r\n                        </div>\r\n\r\n                        <div id=\"market_view_table\">\r\n                            <div class=\"x_panel\">\r\n                                <div class=\"x_content\">\r\n                                    <data-table table-input.bind=\"tableInput\" table-output.bind=\"tableOutput\" display-all-rows.bind=\"displayAllRows\"></data-table>\r\n                                </div>\r\n                            </div>\r\n                        </div>\r\n                    </div>\r\n                </div>\r\n            </div>\r\n        </div> \r\n    </div>\r\n</template>"; });
 define('text!resources/elements/common/load-spinner-element.html', ['module'], function(module) { module.exports = "<template>\r\n\t<require from=\"pure-css-loader/css-loader.css\"></require>\r\n\t<div id=\"load-spinner\" style=\"display: none;\">\r\n\t\t<div class=\"loader loader-default is-active\"></div>\r\n\t</div>\r\n</template>"; });
-define('text!resources/elements/market-view/data-control-element.html', ['module'], function(module) { module.exports = "<template>\r\n\t<div id=\"control-container\" class=\"row center-block\">\r\n\t\t<div class=\"pull-left\" style=\"margin-right: 15px;\">\r\n\t\t\t<div class=\"btn-group\">\r\n              \t<button type=\"button\" class=\"btn btn-dark\">Data Model</button>\r\n              \t<button type=\"button\" class=\"btn btn-dark dropdown-toggle\" data-toggle=\"dropdown\" aria-expanded=\"false\">\r\n                \t<span class=\"caret\"></span>\r\n                \t<span class=\"sr-only\">Toggle Dropdown</span>\r\n              \t</button>\r\n              \t<div class=\"btn-group-vertical dropdown-menu\" data-toggle=\"buttons\" role=\"menu\">\r\n\t                <label class=\"btn btn-dark active\">\r\n\t\t\t         \t<input type=\"radio\" name=\"data_model\" value=\"brandshare\" id=\"brandshareModel\"> Brand Share\r\n\t\t\t        </label>\r\n\t\t\t        <label class=\"btn btn-dark\">\r\n\t\t\t          \t<input type=\"radio\" name=\"data_model\" value=\"salesgrowth\" id=\"salesgrowthModel\"> Sales Growth\r\n\t\t\t        </label>\r\n\t\t\t        <label class=\"btn btn-dark\">\r\n\t\t\t          \t<input type=\"radio\" name=\"data_model\" value=\"pricing\" id=\"pricingModel\"> Pricing\r\n\t\t\t        </label>\r\n\t\t\t        <label class=\"btn btn-dark\">\r\n\t\t\t          \t<input type=\"radio\" name=\"data_model\" value=\"ranking\" id=\"rankingModel\"> Ranking\r\n\t\t\t        </label>\r\n\t            </div>\t\r\n            </div>\r\n\t\t</div> \r\n\r\n\t\t<div class=\"pull-left\" style=\"margin-right: 15px;\">\r\n\t\t\t<div id=\"dataTypeList\" class=\"dropdown btn-group\">\r\n              \t<button type=\"button\" class=\"btn btn-dark\">Data Type</button>\r\n              \t<button type=\"button\" class=\"btn btn-dark dropdown-toggle\" data-toggle=\"dropdown\" aria-expanded=\"false\">\r\n                \t<span class=\"caret\"></span>\r\n                \t<span class=\"sr-only\">Toggle Dropdown</span>\r\n              \t</button>\r\n              \t<div class=\"btn-group-vertical dropdown-menu\" data-toggle=\"buttons\" role=\"menu\">\r\n              \t\t<label if.bind=\"pageState.model === 'ranking'\" class=\"btn btn-dark active\" repeat.for=\"type of dataTypes\">\r\n              \t\t\t<input type=\"checkbox\" name=\"data_type\" value=\"${type}\" checked> ${type}\r\n              \t\t</label>\r\n              \t\t<label if.bind=\"pageState.model !== 'ranking'\" class=\"btn btn-dark\" class.bind=\"$first ? 'active' : ''\" repeat.for=\"type of dataTypes\">\r\n              \t\t\t<input type=\"radio\" name=\"data_type\" value=\"${type}\"> ${type}\r\n              \t\t</label>\r\n\t            </div>\t\r\n            </div>\r\n\t\t</div>\r\n\r\n\t\t<div class=\"pull-left\" style=\"margin-right: 15px;\">\r\n\t\t\t<div id=\"filterList\" class=\"dropdown keep-open btn-group\">\r\n              \t<button type=\"button\" class=\"dLabel btn btn-dark\">Filter</button>\r\n              \t<button type=\"button\" class=\"dToggle btn btn-dark dropdown-toggle\" data-toggle=\"dropdown\" aria-expanded=\"false\">\r\n                \t<span class=\"caret\"></span>\r\n                \t<span class=\"sr-only\">Toggle Dropdown</span>\r\n              \t</button>\r\n              \t<div class=\"btn-group-vertical dropdown-menu\" data-toggle=\"buttons\" role=\"menu\">\r\n              \t\t<label class=\"btn btn-dark\" repeat.for=\"item of filterList\">\r\n              \t\t\t<input type=\"checkbox\" name=\"filter_item\" value=\"${item}\"> ${item}\r\n              \t\t</label>\r\n\t            </div>\t\r\n            </div>\r\n\t\t</div>\r\n\r\n\t\t<div class=\"pull-left\" style=\"margin-right: 15px;\">\r\n\t\t\t<div id=\"compareEntries\" class=\"dropdown keep-open btn-group\">\r\n              \t<button type=\"button\" class=\"dLabel btn btn-dark\">Compare</button>\r\n              \t<button type=\"button\" class=\"dToggle btn btn-dark dropdown-toggle\" data-toggle=\"dropdown\" aria-expanded=\"false\">\r\n                \t<span class=\"caret\"></span>\r\n                \t<span class=\"sr-only\">Toggle Dropdown</span>\r\n              \t</button>\r\n              \t<div class=\"btn-group-vertical dropdown-menu\" data-toggle=\"buttons\" role=\"menu\">\r\n              \t\t<label class=\"btn btn-dark active\">\r\n\t\t\t          \t<input type=\"checkbox\" name=\"industry\" checked> Industry\r\n\t\t\t        </label>\r\n              \t\t<label class=\"btn btn-dark\" repeat.for=\"item of compareOptions\">\r\n              \t\t\t<input type=\"checkbox\" name=\"compare_option\" value=\"${item}\"> ${item}\r\n              \t\t</label>\r\n\t            </div>\t\r\n            </div>\r\n\t\t</div> \r\n\r\n\t\t<div class=\"pull-left\" style=\"margin-right: 15px;\">\r\n\t\t\t<div class=\"btn-group\" data-toggle=\"buttons\">\r\n\t\t        <label class=\"btn btn-dark active\">\r\n\t\t          \t<input type=\"radio\" name=\"graph_type\" value=\"line\" id=\"lineGraphType\"> Line\r\n\t\t        </label>\r\n\t\t        <label class=\"btn btn-dark\">\r\n\t\t          \t<input type=\"radio\" name=\"graph_type\" value=\"bar\" id=\"barGraphType\"> Bar\r\n\t\t        </label>\r\n\t\t        <label class=\"btn btn-dark\">\r\n\t\t          \t<input type=\"radio\" name=\"graph_type\" value=\"pie\" id=\"pieGraphType\"> Pie\r\n\t\t        </label>\r\n\t\t    </div>\r\n\t\t</div>\r\n\r\n\t\t<div class=\"pull-left\" style=\"margin-right: 15px;\">\r\n\t\t\t<div class=\"btn-group\" data-toggle=\"buttons\">\r\n\t\t        <label class=\"btn btn-dark active\">\r\n\t\t         \t<input type=\"radio\" name=\"time_frame\" value=\"week\" id=\"weekTimeFrame\"> Week\r\n\t\t        </label>\r\n\t\t        <label class=\"btn btn-dark\">\r\n\t\t          \t<input type=\"radio\" name=\"time_frame\" value=\"month\" id=\"monthTimeFrame\"> Month\r\n\t\t        </label>\r\n\t\t        <label class=\"btn btn-dark\">\r\n\t\t          \t<input type=\"radio\" name=\"time_frame\" value=\"year\" id=\"yearTimeFrame\"> Year\r\n\t\t        </label>\r\n\t\t    </div>\r\n\t\t</div>\r\n\t</div>\r\n</template>"; });
+define('text!resources/elements/market-view/data-control-element.html', ['module'], function(module) { module.exports = "<template>\r\n\t<div id=\"control-container\" class=\"row center-block\">\r\n\t\t<div class=\"pull-left\" style=\"margin-right: 15px;\">\r\n\t\t\t<div class=\"btn-group\">\r\n              \t<button type=\"button\" class=\"btn btn-dark\">Data Model</button>\r\n              \t<button type=\"button\" class=\"btn btn-dark dropdown-toggle\" data-toggle=\"dropdown\" aria-expanded=\"false\">\r\n                \t<span class=\"caret\"></span>\r\n                \t<span class=\"sr-only\">Toggle Dropdown</span>\r\n              \t</button>\r\n              \t<div class=\"btn-group-vertical dropdown-menu\" data-toggle=\"buttons\" role=\"menu\">\r\n\t                <label class=\"btn btn-dark active\">\r\n\t\t\t         \t<input type=\"radio\" name=\"data_model\" value=\"brandshare\" id=\"brandshareModel\"> Brand Share\r\n\t\t\t        </label>\r\n\t\t\t        <label class=\"btn btn-dark\">\r\n\t\t\t          \t<input type=\"radio\" name=\"data_model\" value=\"salesgrowth\" id=\"salesgrowthModel\"> Sales Growth\r\n\t\t\t        </label>\r\n\t\t\t        <label class=\"btn btn-dark\">\r\n\t\t\t          \t<input type=\"radio\" name=\"data_model\" value=\"pricing\" id=\"pricingModel\"> Pricing\r\n\t\t\t        </label>\r\n\t\t\t        <label class=\"btn btn-dark\">\r\n\t\t\t          \t<input type=\"radio\" name=\"data_model\" value=\"ranking\" id=\"rankingModel\"> Ranking\r\n\t\t\t        </label>\r\n\t            </div>\t\r\n            </div>\r\n\t\t</div> \r\n\r\n\t\t<div class=\"pull-left\" style=\"margin-right: 15px;\">\r\n\t\t\t<div id=\"dataTypeList\" class=\"dropdown btn-group\">\r\n              \t<button type=\"button\" class=\"btn btn-dark\">Data Type</button>\r\n              \t<button type=\"button\" class=\"btn btn-dark dropdown-toggle\" data-toggle=\"dropdown\" aria-expanded=\"false\">\r\n                \t<span class=\"caret\"></span>\r\n                \t<span class=\"sr-only\">Toggle Dropdown</span>\r\n              \t</button>\r\n              \t<div class=\"btn-group-vertical dropdown-menu\" data-toggle=\"buttons\" role=\"menu\">\r\n              \t\t<label if.bind=\"pageState.model === 'ranking'\" class=\"btn btn-dark active\" repeat.for=\"type of dataTypes\">\r\n              \t\t\t<input type=\"checkbox\" name=\"data_type\" value=\"${type}\" checked> ${type}\r\n              \t\t</label>\r\n              \t\t<label if.bind=\"pageState.model !== 'ranking'\" class=\"btn btn-dark\" class.bind=\"$first ? 'active' : ''\" repeat.for=\"type of dataTypes\">\r\n              \t\t\t<input type=\"radio\" name=\"data_type\" value=\"${type}\"> ${type}\r\n              \t\t</label>\r\n\t            </div>\t\r\n            </div>\r\n\t\t</div>\r\n\r\n\t\t<div class=\"pull-left\" style=\"margin-right: 15px;\">\r\n\t\t\t<div id=\"filterList\" class=\"dropdown keep-open btn-group\">\r\n              \t<button type=\"button\" class=\"dLabel btn btn-dark\">Filter</button>\r\n              \t<button type=\"button\" class=\"dToggle btn btn-dark dropdown-toggle\" data-toggle=\"dropdown\" aria-expanded=\"false\">\r\n                \t<span class=\"caret\"></span>\r\n                \t<span class=\"sr-only\">Toggle Dropdown</span>\r\n              \t</button>\r\n              \t<div class=\"btn-group-vertical dropdown-menu\" data-toggle=\"buttons\" role=\"menu\">\r\n              \t\t<label class=\"btn btn-dark\" repeat.for=\"item of filterList\">\r\n              \t\t\t<input type=\"checkbox\" name=\"filter_item\" value=\"${item}\"> ${item}\r\n              \t\t</label>\r\n\t            </div>\t\r\n            </div>\r\n\t\t</div>\r\n\r\n\t\t<div class=\"pull-left\" style=\"margin-right: 15px;\">\r\n\t\t\t<div id=\"compareEntries\" class=\"dropdown keep-open btn-group\">\r\n              \t<button type=\"button\" class=\"dLabel btn btn-dark\">Compare</button>\r\n              \t<button type=\"button\" class=\"dToggle btn btn-dark dropdown-toggle\" data-toggle=\"dropdown\" aria-expanded=\"false\">\r\n                \t<span class=\"caret\"></span>\r\n                \t<span class=\"sr-only\">Toggle Dropdown</span>\r\n              \t</button>\r\n              \t<div class=\"btn-group-vertical dropdown-menu\" data-toggle=\"buttons\" role=\"menu\">\r\n              \t\t<label class=\"btn btn-dark active\">\r\n\t\t\t          \t<input type=\"checkbox\" name=\"industry\" checked> Industry\r\n\t\t\t        </label>\r\n              \t\t<label class=\"btn btn-dark\" repeat.for=\"item of compareOptions\">\r\n              \t\t\t<input type=\"checkbox\" name=\"compare_option\" value=\"${item}\"> ${item}\r\n              \t\t</label>\r\n\t            </div>\t\r\n            </div>\r\n\t\t</div> \r\n\r\n\t\t<div class=\"pull-left\" style=\"margin-right: 15px;\">\r\n\t\t\t<div class=\"btn-group\" data-toggle=\"buttons\">\r\n\t\t        <label class=\"btn btn-dark active\">\r\n\t\t          \t<input type=\"radio\" name=\"graph_type\" value=\"line\" id=\"lineGraphType\"> Line\r\n\t\t        </label>\r\n\t\t        <label class=\"btn btn-dark\">\r\n\t\t          \t<input type=\"radio\" name=\"graph_type\" value=\"bar\" id=\"barGraphType\"> Bar\r\n\t\t        </label>\r\n\t\t        <label class=\"btn btn-dark\">\r\n\t\t          \t<input type=\"radio\" name=\"graph_type\" value=\"pie\" id=\"pieGraphType\"> Pie\r\n\t\t        </label>\r\n\t\t    </div>\r\n\t\t</div>\r\n\r\n\t\t<div class=\"pull-left\" style=\"margin-right: 15px;\">\r\n\t\t\t<div class=\"btn-group\" data-toggle=\"buttons\">\r\n\t\t        <label class=\"btn btn-dark active\">\r\n\t\t         \t<input type=\"radio\" name=\"time_frame\" value=\"week\" id=\"weekTimeFrame\"> Week\r\n\t\t        </label>\r\n\t\t        <label class=\"btn btn-dark\">\r\n\t\t          \t<input type=\"radio\" name=\"time_frame\" value=\"month\" id=\"monthTimeFrame\"> Month\r\n\t\t        </label>\r\n\t\t        <label class=\"btn btn-dark\">\r\n\t\t          \t<input type=\"radio\" name=\"time_frame\" value=\"year\" id=\"yearTimeFrame\"> Year\r\n\t\t        </label>\r\n\t\t    </div>\r\n\t\t</div>\r\n\t\t<div class=\"pull-left\" style=\"margin-right: 15px;\">\r\n\t\t\t<div class=\"btn-group\" data-toggle=\"buttons\">\r\n\t\t        <label class=\"btn btn-dark active\">\r\n\t\t         \t<input type=\"radio\" name=\"display_option\" value=\"current\" id=\"weekTimeFrame\"> Current Page\r\n\t\t        </label>\r\n\t\t        <label class=\"btn btn-dark\">\r\n\t\t          \t<input type=\"radio\" name=\"display_option\" value=\"all\" id=\"monthTimeFrame\"> All Pages\r\n\t\t        </label>\r\n\t\t    </div>\r\n\t\t</div>\r\n\t</div>\r\n</template>"; });
 define('text!resources/elements/market-view/data-graph-element.html', ['module'], function(module) { module.exports = "<template>\r\n\t<div id=\"graph-container\" class=\"center-block\">\r\n\t\t<canvas id=\"chartjsGraph\"></canvas>\r\n\t</div>\r\n</template>"; });
 define('text!resources/elements/market-view/data-table-element.html', ['module'], function(module) { module.exports = "<template>\r\n\t<require from=\"datatables.net-bs/css/dataTables.bootstrap.css\"></require>\r\n\t<div id=\"data-menu-container\" class=\"hidden\"></div>\r\n\t<div id=\"data-table-container\">\r\n\t\t<div id=\"results\" style=\"overflow-x: auto;\">\r\n\t\t\t<table id=\"datatable-responsive\" class=\"table table-striped table-bordered dt-responsive nowrap\" cellspacing=\"0\" width=\"100%\"></table>\r\n\t\t</div>\r\n\t</div>\r\n</template>"; });
 define('text!resources/elements/market-view/pivot-table-element.html', ['module'], function(module) { module.exports = "<template>\r\n\t<require from=\"pivottable/pivot.min.css\"></require>\r\n\t<div id=\"pivot-table-container\">\r\n\t</div>\r\n</template>"; });

@@ -19,6 +19,7 @@ export class HomeLanding {
 	@bindable({ defaultBindingMode: bindingMode.twoWay }) dataTypes: string[] = [];
 	@bindable({ defaultBindingMode: bindingMode.twoWay }) filterList: string[] = [];
 	@bindable({ defaultBindingMode: bindingMode.twoWay }) excludeIndustry: boolean = false;
+	@bindable({ defaultBindingMode: bindingMode.twoWay }) displayAllRows: boolean = false;
 	private observers: any[] = [];
 	public subscriptionList: Subscription[] = []; // event subscription list
 	private pivot: any;
@@ -393,7 +394,6 @@ export class HomeLanding {
 	 */
 	private updateDataGraph(){
 		const chart = this.createChartInput();
-		console.log(chart);
 		let data = {};
 		data['labels'] = chart.headers;
 		data['datasets'] = [];
@@ -412,6 +412,10 @@ export class HomeLanding {
 				data['datasets'].push(dataset);
 			}
 			this.graphData.data = data;
+			if (data['datasets'].length > 20) {
+				const legendOptions = {display: false};
+				this.graphData.options['legend'] = legendOptions;
+			}
 		} else if(this.pageState.graph_type === 'bar'){
 			this.graphData.type = 'bar';
 			this.graphData.options = {responsive: true, scales: {yAxes: [{ticks: {beginAtZero: true}}]}};
@@ -425,6 +429,10 @@ export class HomeLanding {
 			    data['datasets'].push(dataset);
 			}
 			this.graphData.data = data;
+			if (data['datasets'].length > 20) {
+				const legendOptions = {display: false};
+				this.graphData.options['legend'] = legendOptions;
+			}
 		} else if(this.pageState.graph_type === 'pie'){
 			this.graphData.type = 'pie';
 			this.graphData.options = {responsive: true, legend: false};
@@ -480,17 +488,18 @@ export class HomeLanding {
 
 	private createChartInput() {
 		this.spinnerOpen();
+		const skipLimit = this.filterList.length + 1;
 		let graphData = [],
 			graphHeaders = [],
 			graphLabels = [],
 			colors = [],
 			rows = this.tableOutput.data.body;
 		rows.forEach((row) => {
-			graphLabels.push(row.slice(0, this.tableOutput.skipCols).join(':'));
-			graphData.push(row.slice(this.tableOutput.skipCols, row.length));
+			graphLabels.push(row.slice(0, skipLimit).join(':'));
+			graphData.push(row.slice(skipLimit, row.length));
 		});
 
-		graphHeaders = this.tableOutput.data.header.slice(this.tableOutput.skipCols, this.tableOutput.data.header.length);
+		graphHeaders = this.tableOutput.data.header.slice(skipLimit, this.tableOutput.data.header.length);
 
 		// add colors
 		colors = palette('tol-rainbow', graphLabels.length).map(function(hex) {

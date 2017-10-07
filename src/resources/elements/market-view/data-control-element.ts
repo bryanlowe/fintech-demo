@@ -18,6 +18,7 @@ export class DataControlElement {
   @bindable({ defaultBindingMode: bindingMode.twoWay }) dataTypes: string[];
   @bindable({ defaultBindingMode: bindingMode.twoWay }) filterList: string[];
   @bindable({ defaultBindingMode: bindingMode.twoWay }) excludeIndustry: boolean = false;
+  @bindable({ defaultBindingMode: bindingMode.twoWay }) displayAllRows: boolean = false;
   private observers: any[] = [];
   private mutationObservers: any[] = []; 
   constructor(private bindingEngine: BindingEngine, private events: EventAggregator, private taskQueue: TaskQueue){}
@@ -35,6 +36,13 @@ export class DataControlElement {
       const _jqThis = event.currentTarget;
       if ($(_jqThis).is(':checked')) 
         this.pageState.time_frame = $(_jqThis).val();
+    });
+
+    // display options buttons
+    $('input[type="radio"][name="display_option"]').change((event) => {
+      const _jqThis = event.currentTarget;
+      if ($(_jqThis).is(':checked')) 
+        this.displayAllRows = $(_jqThis).val() === 'all';
     });
 
     // data model buttons

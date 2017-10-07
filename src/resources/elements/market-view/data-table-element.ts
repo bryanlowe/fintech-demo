@@ -15,6 +15,7 @@ import './../../../scripts/vendors/pivot/jquery_pivot.js';
 @inject(BindingEngine, EventAggregator)
 export class DataTableElement { 
 	@bindable tableInput: any = {json: ''}; 
+  @bindable displayAllRows: boolean = false; 
   @bindable({ defaultBindingMode: bindingMode.twoWay }) tableOutput: any;  
   private subscription: any = null;
   private dataTable: any = null;
@@ -39,6 +40,10 @@ export class DataTableElement {
 
   private outputData() {
     const data = this.dataTable.buttons.exportData({
+      modifier: {
+        order: this.displayAllRows ? 'current' : 'index',
+        page: this.displayAllRows ? 'all' : 'current',
+      },
       format: {
         body: (innerHtml, rowIndex, columnIndex, cellNode) => {
           const value = Number(innerHtml.replace('$', '').replace('%', '').replace('--', '0').replace(/,/g, ''));
@@ -82,6 +87,8 @@ export class DataTableElement {
     // subscribe to data table row changes
     this.subscription = this.bindingEngine.propertyObserver(this.tableInput, 'json')
         .subscribe((newValue, oldValue) => this.updatePivottable());
+    this.subscription = this.bindingEngine.propertyObserver(this, 'displayAllRows')
+        .subscribe((newValue, oldValue) => this.outputData());
   }
 
   detached(){
