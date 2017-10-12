@@ -64,16 +64,6 @@ define('not-found',["require", "exports"], function (require, exports) {
     exports.NotFound = NotFound;
 });
 
-define('pages/index',["require", "exports", "aurelia-router"], function (require, exports, aurelia_router_1) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    function configure(config) {
-        var router = config.container.get(aurelia_router_1.Router);
-        router.addRoute({ route: 'home', name: 'home', moduleId: 'pages/home/main', nav: true });
-    }
-    exports.configure = configure;
-});
-
 define('resources/index',["require", "exports"], function (require, exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
@@ -85,6 +75,16 @@ define('resources/index',["require", "exports"], function (require, exports) {
             './elements/market-view/data-control-element',
             './elements/market-view/pivot-table-element',
         ]);
+    }
+    exports.configure = configure;
+});
+
+define('pages/index',["require", "exports", "aurelia-router"], function (require, exports, aurelia_router_1) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    function configure(config) {
+        var router = config.container.get(aurelia_router_1.Router);
+        router.addRoute({ route: 'home', name: 'home', moduleId: 'pages/home/main', nav: true });
     }
     exports.configure = configure;
 });
@@ -227,6 +227,438 @@ define('pages/page-elements/topbar-menu',["require", "exports", "jquery"], funct
         return TopbarMenu;
     }());
     exports.TopbarMenu = TopbarMenu;
+});
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+define('resources/elements/common/load-spinner-element',["require", "exports", "aurelia-framework", "aurelia-framework", "aurelia-binding", "aurelia-event-aggregator", "jquery"], function (require, exports, aurelia_framework_1, aurelia_framework_2, aurelia_binding_1, aurelia_event_aggregator_1, $) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    var LoadSpinnerElement = (function () {
+        function LoadSpinnerElement(bindingEngine, events) {
+            this.bindingEngine = bindingEngine;
+            this.events = events;
+            this.toggle = false;
+            this.subscriptionList = [];
+        }
+        LoadSpinnerElement.prototype.attached = function () {
+            this.subscriptionList.push(this.events.subscribe('$openSpinner', function () { return $('#load-spinner').show(); }));
+            this.subscriptionList.push(this.events.subscribe('$closeSpinner', function () { return $('#load-spinner').hide(); }));
+        };
+        LoadSpinnerElement.prototype.detached = function () {
+            for (var i = 0, ii = this.subscriptionList.length; i < ii; i++) {
+                this.subscriptionList[i].dispose();
+            }
+        };
+        __decorate([
+            aurelia_framework_2.bindable,
+            __metadata("design:type", Boolean)
+        ], LoadSpinnerElement.prototype, "toggle", void 0);
+        LoadSpinnerElement = __decorate([
+            aurelia_framework_1.customElement('load-spinner'),
+            aurelia_framework_2.useView('./load-spinner-element.html'),
+            aurelia_framework_2.inject(aurelia_binding_1.BindingEngine, aurelia_event_aggregator_1.EventAggregator),
+            __metadata("design:paramtypes", [aurelia_binding_1.BindingEngine, aurelia_event_aggregator_1.EventAggregator])
+        ], LoadSpinnerElement);
+        return LoadSpinnerElement;
+    }());
+    exports.LoadSpinnerElement = LoadSpinnerElement;
+});
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+define('resources/elements/market-view/data-control-element',["require", "exports", "aurelia-framework", "aurelia-framework", "aurelia-binding", "aurelia-event-aggregator", "aurelia-pal", "jquery"], function (require, exports, aurelia_framework_1, aurelia_framework_2, aurelia_binding_1, aurelia_event_aggregator_1, aurelia_pal_1, $) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    var DataControlElement = (function () {
+        function DataControlElement(bindingEngine, events, taskQueue) {
+            this.bindingEngine = bindingEngine;
+            this.events = events;
+            this.taskQueue = taskQueue;
+            this.excludeIndustry = false;
+            this.displayAllRows = false;
+            this.observers = [];
+            this.mutationObservers = [];
+        }
+        DataControlElement.prototype.initialize = function () {
+            var _this = this;
+            $('input[type="radio"][name="graph_type"]').change(function (event) {
+                var _jqThis = event.currentTarget;
+                if ($(_jqThis).is(':checked'))
+                    _this.pageState.graph_type = $(_jqThis).val();
+            });
+            $('input[type="radio"][name="time_frame"]').change(function (event) {
+                var _jqThis = event.currentTarget;
+                if ($(_jqThis).is(':checked'))
+                    _this.pageState.time_frame = $(_jqThis).val();
+            });
+            $('input[type="radio"][name="display_option"]').change(function (event) {
+                var _jqThis = event.currentTarget;
+                if ($(_jqThis).is(':checked'))
+                    _this.displayAllRows = $(_jqThis).val() === 'all';
+            });
+            $('input[type="radio"][name="data_model"]').change(function (event) {
+                var _jqThis = event.currentTarget;
+                if ($(_jqThis).is(':checked'))
+                    _this.pageState.model = $(_jqThis).val();
+            });
+            $('input[type="checkbox"][name="industry"]').change(function (event) {
+                var _jqThis = event.currentTarget;
+                _this.excludeIndustry = $(_jqThis).is(':checked') ? false : true;
+            });
+            this.initDataTypes();
+            $('.keep-open').on({
+                "shown.bs.dropdown": function (event) { $(event.currentTarget).attr('closable', false); },
+                "click": function () { },
+                "hide.bs.dropdown": function (event) { return $(event.currentTarget).attr('closable') == 'true'; }
+            });
+            $('.keep-open .dLabel, .keep-open .dToggle').on({
+                "click": function (event) {
+                    $(event.currentTarget).parent().attr('closable', true);
+                }
+            });
+        };
+        DataControlElement.prototype.initCompareOptions = function () {
+            var include = [];
+            $('input[type="checkbox"][name="compare_option"]').each(function (index, element) {
+                if ($(element).is(':checked'))
+                    include.push($(element).val());
+            });
+            this.compareList = include;
+        };
+        DataControlElement.prototype.initDataTypes = function () {
+            $('input[type="radio"][name="data_type"]').change(function (event) {
+                var _jqThis = event.currentTarget;
+                if ($(_jqThis).is(':checked')) {
+                    $('input[type="checkbox"].summary:checked').click();
+                    $('input[type="checkbox"][data-field="' + $(_jqThis).val() + '"].summary').click();
+                }
+            });
+            $('input[type="checkbox"][name="data_type"]').change(function (event) {
+                $('input[type="checkbox"][data-field="' + $(event.currentTarget).val() + '"].summary').click();
+            });
+        };
+        DataControlElement.prototype.initFilterOptions = function () {
+            $('input[type="checkbox"][name="filter_item"]').change(function (event) {
+                $('input[type="checkbox"][data-field="' + $(event.currentTarget).val() + '"].row-labelable').click();
+            });
+            if (this.pageState.model === 'ranking')
+                $('input[type="checkbox"][name="filter_item"]:first').click();
+        };
+        DataControlElement.prototype.attached = function () {
+            var _this = this;
+            this.initialize();
+            var compareListObserver = aurelia_pal_1.DOM.createMutationObserver(function () {
+                _this.initCompareOptions();
+            });
+            this.mutationObservers.push(compareListObserver.observe($('#compareEntries')[0], { childList: true, subtree: true, attributes: true, characterData: true }));
+            var dataTypeObserver = aurelia_pal_1.DOM.createMutationObserver(function () {
+                _this.initDataTypes();
+            });
+            this.mutationObservers.push(dataTypeObserver.observe($('#dataTypeList')[0], { childList: true, subtree: true, characterData: true }));
+            var filterlistObserver = aurelia_pal_1.DOM.createMutationObserver(function () {
+                _this.initFilterOptions();
+            });
+            this.mutationObservers.push(filterlistObserver.observe($('#filterList')[0], { childList: true, subtree: true, characterData: true }));
+            this.observers.push(this.bindingEngine.propertyObserver(this, 'dataTypes')
+                .subscribe(function (newValue, oldValue) { return _this.initDataTypes(); }));
+            this.observers.push(this.bindingEngine.propertyObserver(this, 'filterList')
+                .subscribe(function (newValue, oldValue) { return _this.initFilterOptions(); }));
+        };
+        DataControlElement.prototype.detached = function () {
+            for (var i = 0, ii = this.mutationObservers.length; i < ii; i++) {
+                this.mutationObservers[i].disconnect();
+            }
+            for (var i = 0, ii = this.observers.length; i < ii; i++) {
+                this.observers[i].dispose();
+            }
+        };
+        __decorate([
+            aurelia_framework_2.bindable({ defaultBindingMode: aurelia_framework_2.bindingMode.twoWay }),
+            __metadata("design:type", Object)
+        ], DataControlElement.prototype, "pageState", void 0);
+        __decorate([
+            aurelia_framework_2.bindable({ defaultBindingMode: aurelia_framework_2.bindingMode.twoWay }),
+            __metadata("design:type", Array)
+        ], DataControlElement.prototype, "compareList", void 0);
+        __decorate([
+            aurelia_framework_2.bindable({ defaultBindingMode: aurelia_framework_2.bindingMode.twoWay }),
+            __metadata("design:type", Array)
+        ], DataControlElement.prototype, "compareOptions", void 0);
+        __decorate([
+            aurelia_framework_2.bindable({ defaultBindingMode: aurelia_framework_2.bindingMode.twoWay }),
+            __metadata("design:type", Array)
+        ], DataControlElement.prototype, "dataTypes", void 0);
+        __decorate([
+            aurelia_framework_2.bindable({ defaultBindingMode: aurelia_framework_2.bindingMode.twoWay }),
+            __metadata("design:type", Array)
+        ], DataControlElement.prototype, "filterList", void 0);
+        __decorate([
+            aurelia_framework_2.bindable({ defaultBindingMode: aurelia_framework_2.bindingMode.twoWay }),
+            __metadata("design:type", Boolean)
+        ], DataControlElement.prototype, "excludeIndustry", void 0);
+        __decorate([
+            aurelia_framework_2.bindable({ defaultBindingMode: aurelia_framework_2.bindingMode.twoWay }),
+            __metadata("design:type", Boolean)
+        ], DataControlElement.prototype, "displayAllRows", void 0);
+        DataControlElement = __decorate([
+            aurelia_framework_1.customElement('data-control'),
+            aurelia_framework_2.useView('./data-control-element.html'),
+            aurelia_framework_2.inject(aurelia_binding_1.BindingEngine, aurelia_event_aggregator_1.EventAggregator, aurelia_framework_2.TaskQueue),
+            __metadata("design:paramtypes", [aurelia_binding_1.BindingEngine, aurelia_event_aggregator_1.EventAggregator, aurelia_framework_2.TaskQueue])
+        ], DataControlElement);
+        return DataControlElement;
+    }());
+    exports.DataControlElement = DataControlElement;
+});
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+define('resources/elements/market-view/data-graph-element',["require", "exports", "aurelia-framework", "aurelia-framework", "aurelia-binding", "jquery", "chart.js"], function (require, exports, aurelia_framework_1, aurelia_framework_2, aurelia_binding_1, $, Chart) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    var DataGraphElement = (function () {
+        function DataGraphElement(bindingEngine) {
+            this.bindingEngine = bindingEngine;
+            this.graphData = { type: '', data: { labels: [], datasets: [] }, options: {} };
+            this.subscription = null;
+        }
+        DataGraphElement.prototype.updateDataGraph = function () {
+            $('#chartjsGraph, .chartjs-hidden-iframe').remove();
+            if (this.graphData.type === 'pie') {
+                $('#graph-container').css('width', '600px');
+            }
+            else {
+                $('#graph-container').css('width', '1072px');
+            }
+            $('#graph-container').append('<canvas id="chartjsGraph"></canvas>');
+            var context = $("#chartjsGraph")[0];
+            var chart = new Chart(context, {
+                type: this.graphData.type,
+                data: this.graphData.data,
+                options: this.graphData.options
+            });
+        };
+        DataGraphElement.prototype.attached = function () {
+            var _this = this;
+            this.subscription = this.bindingEngine.propertyObserver(this.graphData, 'data')
+                .subscribe(function (newValue, oldValue) { return _this.updateDataGraph(); });
+        };
+        DataGraphElement.prototype.detached = function () {
+            this.subscription.dispose();
+        };
+        __decorate([
+            aurelia_framework_2.bindable,
+            __metadata("design:type", Object)
+        ], DataGraphElement.prototype, "graphData", void 0);
+        DataGraphElement = __decorate([
+            aurelia_framework_1.customElement('data-graph'),
+            aurelia_framework_2.useView('./data-graph-element.html'),
+            aurelia_framework_2.inject(aurelia_binding_1.BindingEngine),
+            __metadata("design:paramtypes", [aurelia_binding_1.BindingEngine])
+        ], DataGraphElement);
+        return DataGraphElement;
+    }());
+    exports.DataGraphElement = DataGraphElement;
+});
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+define('resources/elements/market-view/data-table-element',["require", "exports", "aurelia-framework", "aurelia-framework", "aurelia-binding", "aurelia-event-aggregator", "jquery", "datatables.net-buttons-bs", "./../../../scripts/vendors/pivot/pivot.min.js", "./../../../scripts/vendors/pivot/jquery_pivot.js"], function (require, exports, aurelia_framework_1, aurelia_framework_2, aurelia_binding_1, aurelia_event_aggregator_1, $, DataTable) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    var DataTableElement = (function () {
+        function DataTableElement(bindingEngine, events) {
+            this.bindingEngine = bindingEngine;
+            this.events = events;
+            this.tableInput = { json: '' };
+            this.displayAllRows = false;
+            this.subscription = null;
+            this.dataTable = null;
+            this.skipCols = 1;
+        }
+        DataTableElement.prototype.spinnerOpen = function () {
+            this.events.publish('$openSpinner');
+        };
+        DataTableElement.prototype.spinnerClose = function () {
+            this.events.publish('$closeSpinner');
+        };
+        DataTableElement.prototype.updatePivottable = function () {
+            this.setupPivot(this.tableInput);
+        };
+        DataTableElement.prototype.outputData = function () {
+            var data = this.dataTable.buttons.exportData({
+                modifier: {
+                    order: this.displayAllRows ? 'current' : 'index',
+                    page: this.displayAllRows ? 'all' : 'current',
+                },
+                format: {
+                    body: function (innerHtml, rowIndex, columnIndex, cellNode) {
+                        var value = Number(innerHtml.replace('$', '').replace('%', '').replace('--', '0').replace(/,/g, ''));
+                        return !isNaN(value) ? value : innerHtml;
+                    }
+                }
+            });
+            this.tableOutput = { data: data, skipCols: this.skipCols };
+        };
+        DataTableElement.prototype.setupPivot = function (input) {
+            var _this = this;
+            this.spinnerOpen();
+            if (DataTable) {
+                $('.pivot_header_fields').remove();
+                input.callbacks = { afterUpdateResults: function () {
+                        _this.dataTable = $('#data-table-container table').DataTable({
+                            scrollY: "500px",
+                            scrollX: "1200px",
+                            scrollCollapse: true,
+                            select: 'single'
+                        });
+                        $('#data-table-container table').addClass('table-bordered');
+                        $('#data-table-container table th, #data-table-container table td').css('white-space', 'nowrap');
+                        _this.dataTable.on('draw', function () {
+                            _this.outputData();
+                        });
+                        _this.dataTable.column('0:visible').order('asc').draw();
+                    } };
+                $('#data-menu-container').pivot_display('setup', input);
+                this.spinnerClose();
+            }
+            else {
+                setTimeout(function () {
+                    _this.setupPivot(input);
+                }, 100);
+            }
+        };
+        DataTableElement.prototype.attached = function () {
+            var _this = this;
+            this.subscription = this.bindingEngine.propertyObserver(this.tableInput, 'json')
+                .subscribe(function (newValue, oldValue) { return _this.updatePivottable(); });
+            this.subscription = this.bindingEngine.propertyObserver(this, 'displayAllRows')
+                .subscribe(function (newValue, oldValue) { return _this.outputData(); });
+        };
+        DataTableElement.prototype.detached = function () {
+            this.subscription.dispose();
+        };
+        __decorate([
+            aurelia_framework_2.bindable,
+            __metadata("design:type", Object)
+        ], DataTableElement.prototype, "tableInput", void 0);
+        __decorate([
+            aurelia_framework_2.bindable,
+            __metadata("design:type", Boolean)
+        ], DataTableElement.prototype, "displayAllRows", void 0);
+        __decorate([
+            aurelia_framework_2.bindable({ defaultBindingMode: aurelia_framework_2.bindingMode.twoWay }),
+            __metadata("design:type", Object)
+        ], DataTableElement.prototype, "tableOutput", void 0);
+        DataTableElement = __decorate([
+            aurelia_framework_1.customElement('data-table'),
+            aurelia_framework_2.useView('./data-table-element.html'),
+            aurelia_framework_2.inject(aurelia_binding_1.BindingEngine, aurelia_event_aggregator_1.EventAggregator),
+            __metadata("design:paramtypes", [aurelia_binding_1.BindingEngine, aurelia_event_aggregator_1.EventAggregator])
+        ], DataTableElement);
+        return DataTableElement;
+    }());
+    exports.DataTableElement = DataTableElement;
+});
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+define('resources/elements/market-view/pivot-table-element',["require", "exports", "aurelia-framework", "aurelia-framework", "aurelia-binding", "jquery", "pivottable"], function (require, exports, aurelia_framework_1, aurelia_framework_2, aurelia_binding_1, $, PivotTable) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    var PivotTableElement = (function () {
+        function PivotTableElement(bindingEngine) {
+            this.bindingEngine = bindingEngine;
+            this.tableData = { json: '' };
+            this.subscription = null;
+        }
+        PivotTableElement.prototype.updatePivottable = function () {
+            this.setupPivot(this.tableData.input);
+        };
+        PivotTableElement.prototype.setupPivot = function (input) {
+            var _this = this;
+            if (PivotTable) {
+                $("#pivot-table-container").pivot(input, {
+                    rows: ["Brand", "Model"],
+                    cols: ["Date"],
+                    aggregator: this.brandshare('revenue', 'whole'),
+                    colOrder: 'value_a_to_z'
+                });
+            }
+            else {
+                setTimeout(function () {
+                    _this.setupPivot(input);
+                }, 100);
+            }
+        };
+        PivotTableElement.prototype.brandshare = function (dataType, dataFormat) {
+            return function (data, rowKey, colKey) {
+                return {
+                    result: 0,
+                    total: 0,
+                    push: function (record) { this.result = dataType === 'revenue' ? record.Revenue : record.Units; this.total += this.result; },
+                    value: function () { return colKey.length ? this.result : this.total; },
+                    format: function (x) { x = x.toFixed(2).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ","); return dataFormat === 'whole' ? x : x + '%'; },
+                };
+            };
+        };
+        PivotTableElement.prototype.attached = function () {
+            var _this = this;
+            this.subscription = this.bindingEngine.propertyObserver(this.tableData, 'input')
+                .subscribe(function (newValue, oldValue) { return _this.updatePivottable(); });
+        };
+        PivotTableElement.prototype.detached = function () {
+            this.subscription.dispose();
+        };
+        __decorate([
+            aurelia_framework_2.bindable,
+            __metadata("design:type", Object)
+        ], PivotTableElement.prototype, "tableData", void 0);
+        PivotTableElement = __decorate([
+            aurelia_framework_1.customElement('pivot-table'),
+            aurelia_framework_2.useView('./pivot-table-element.html'),
+            aurelia_framework_2.inject(aurelia_binding_1.BindingEngine),
+            __metadata("design:paramtypes", [aurelia_binding_1.BindingEngine])
+        ], PivotTableElement);
+        return PivotTableElement;
+    }());
+    exports.PivotTableElement = PivotTableElement;
 });
 
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
@@ -692,438 +1124,6 @@ define('pages/home/components/index',["require", "exports", "aurelia-fetch-clien
     exports.HomeLanding = HomeLanding;
 });
 
-var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
-};
-var __metadata = (this && this.__metadata) || function (k, v) {
-    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
-};
-define('resources/elements/market-view/data-control-element',["require", "exports", "aurelia-framework", "aurelia-framework", "aurelia-binding", "aurelia-event-aggregator", "aurelia-pal", "jquery"], function (require, exports, aurelia_framework_1, aurelia_framework_2, aurelia_binding_1, aurelia_event_aggregator_1, aurelia_pal_1, $) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    var DataControlElement = (function () {
-        function DataControlElement(bindingEngine, events, taskQueue) {
-            this.bindingEngine = bindingEngine;
-            this.events = events;
-            this.taskQueue = taskQueue;
-            this.excludeIndustry = false;
-            this.displayAllRows = false;
-            this.observers = [];
-            this.mutationObservers = [];
-        }
-        DataControlElement.prototype.initialize = function () {
-            var _this = this;
-            $('input[type="radio"][name="graph_type"]').change(function (event) {
-                var _jqThis = event.currentTarget;
-                if ($(_jqThis).is(':checked'))
-                    _this.pageState.graph_type = $(_jqThis).val();
-            });
-            $('input[type="radio"][name="time_frame"]').change(function (event) {
-                var _jqThis = event.currentTarget;
-                if ($(_jqThis).is(':checked'))
-                    _this.pageState.time_frame = $(_jqThis).val();
-            });
-            $('input[type="radio"][name="display_option"]').change(function (event) {
-                var _jqThis = event.currentTarget;
-                if ($(_jqThis).is(':checked'))
-                    _this.displayAllRows = $(_jqThis).val() === 'all';
-            });
-            $('input[type="radio"][name="data_model"]').change(function (event) {
-                var _jqThis = event.currentTarget;
-                if ($(_jqThis).is(':checked'))
-                    _this.pageState.model = $(_jqThis).val();
-            });
-            $('input[type="checkbox"][name="industry"]').change(function (event) {
-                var _jqThis = event.currentTarget;
-                _this.excludeIndustry = $(_jqThis).is(':checked') ? false : true;
-            });
-            this.initDataTypes();
-            $('.keep-open').on({
-                "shown.bs.dropdown": function (event) { $(event.currentTarget).attr('closable', false); },
-                "click": function () { },
-                "hide.bs.dropdown": function (event) { return $(event.currentTarget).attr('closable') == 'true'; }
-            });
-            $('.keep-open .dLabel, .keep-open .dToggle').on({
-                "click": function (event) {
-                    $(event.currentTarget).parent().attr('closable', true);
-                }
-            });
-        };
-        DataControlElement.prototype.initCompareOptions = function () {
-            var include = [];
-            $('input[type="checkbox"][name="compare_option"]').each(function (index, element) {
-                if ($(element).is(':checked'))
-                    include.push($(element).val());
-            });
-            this.compareList = include;
-        };
-        DataControlElement.prototype.initDataTypes = function () {
-            $('input[type="radio"][name="data_type"]').change(function (event) {
-                var _jqThis = event.currentTarget;
-                if ($(_jqThis).is(':checked')) {
-                    $('input[type="checkbox"].summary:checked').click();
-                    $('input[type="checkbox"][data-field="' + $(_jqThis).val() + '"].summary').click();
-                }
-            });
-            $('input[type="checkbox"][name="data_type"]').change(function (event) {
-                $('input[type="checkbox"][data-field="' + $(event.currentTarget).val() + '"].summary').click();
-            });
-        };
-        DataControlElement.prototype.initFilterOptions = function () {
-            $('input[type="checkbox"][name="filter_item"]').change(function (event) {
-                $('input[type="checkbox"][data-field="' + $(event.currentTarget).val() + '"].row-labelable').click();
-            });
-            if (this.pageState.model === 'ranking')
-                $('input[type="checkbox"][name="filter_item"]:first').click();
-        };
-        DataControlElement.prototype.attached = function () {
-            var _this = this;
-            this.initialize();
-            var compareListObserver = aurelia_pal_1.DOM.createMutationObserver(function () {
-                _this.initCompareOptions();
-            });
-            this.mutationObservers.push(compareListObserver.observe($('#compareEntries')[0], { childList: true, subtree: true, attributes: true, characterData: true }));
-            var dataTypeObserver = aurelia_pal_1.DOM.createMutationObserver(function () {
-                _this.initDataTypes();
-            });
-            this.mutationObservers.push(dataTypeObserver.observe($('#dataTypeList')[0], { childList: true, subtree: true, characterData: true }));
-            var filterlistObserver = aurelia_pal_1.DOM.createMutationObserver(function () {
-                _this.initFilterOptions();
-            });
-            this.mutationObservers.push(filterlistObserver.observe($('#filterList')[0], { childList: true, subtree: true, characterData: true }));
-            this.observers.push(this.bindingEngine.propertyObserver(this, 'dataTypes')
-                .subscribe(function (newValue, oldValue) { return _this.initDataTypes(); }));
-            this.observers.push(this.bindingEngine.propertyObserver(this, 'filterList')
-                .subscribe(function (newValue, oldValue) { return _this.initFilterOptions(); }));
-        };
-        DataControlElement.prototype.detached = function () {
-            for (var i = 0, ii = this.mutationObservers.length; i < ii; i++) {
-                this.mutationObservers[i].disconnect();
-            }
-            for (var i = 0, ii = this.observers.length; i < ii; i++) {
-                this.observers[i].dispose();
-            }
-        };
-        __decorate([
-            aurelia_framework_2.bindable({ defaultBindingMode: aurelia_framework_2.bindingMode.twoWay }),
-            __metadata("design:type", Object)
-        ], DataControlElement.prototype, "pageState", void 0);
-        __decorate([
-            aurelia_framework_2.bindable({ defaultBindingMode: aurelia_framework_2.bindingMode.twoWay }),
-            __metadata("design:type", Array)
-        ], DataControlElement.prototype, "compareList", void 0);
-        __decorate([
-            aurelia_framework_2.bindable({ defaultBindingMode: aurelia_framework_2.bindingMode.twoWay }),
-            __metadata("design:type", Array)
-        ], DataControlElement.prototype, "compareOptions", void 0);
-        __decorate([
-            aurelia_framework_2.bindable({ defaultBindingMode: aurelia_framework_2.bindingMode.twoWay }),
-            __metadata("design:type", Array)
-        ], DataControlElement.prototype, "dataTypes", void 0);
-        __decorate([
-            aurelia_framework_2.bindable({ defaultBindingMode: aurelia_framework_2.bindingMode.twoWay }),
-            __metadata("design:type", Array)
-        ], DataControlElement.prototype, "filterList", void 0);
-        __decorate([
-            aurelia_framework_2.bindable({ defaultBindingMode: aurelia_framework_2.bindingMode.twoWay }),
-            __metadata("design:type", Boolean)
-        ], DataControlElement.prototype, "excludeIndustry", void 0);
-        __decorate([
-            aurelia_framework_2.bindable({ defaultBindingMode: aurelia_framework_2.bindingMode.twoWay }),
-            __metadata("design:type", Boolean)
-        ], DataControlElement.prototype, "displayAllRows", void 0);
-        DataControlElement = __decorate([
-            aurelia_framework_1.customElement('data-control'),
-            aurelia_framework_2.useView('./data-control-element.html'),
-            aurelia_framework_2.inject(aurelia_binding_1.BindingEngine, aurelia_event_aggregator_1.EventAggregator, aurelia_framework_2.TaskQueue),
-            __metadata("design:paramtypes", [aurelia_binding_1.BindingEngine, aurelia_event_aggregator_1.EventAggregator, aurelia_framework_2.TaskQueue])
-        ], DataControlElement);
-        return DataControlElement;
-    }());
-    exports.DataControlElement = DataControlElement;
-});
-
-var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
-};
-var __metadata = (this && this.__metadata) || function (k, v) {
-    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
-};
-define('resources/elements/market-view/data-graph-element',["require", "exports", "aurelia-framework", "aurelia-framework", "aurelia-binding", "jquery", "chart.js"], function (require, exports, aurelia_framework_1, aurelia_framework_2, aurelia_binding_1, $, Chart) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    var DataGraphElement = (function () {
-        function DataGraphElement(bindingEngine) {
-            this.bindingEngine = bindingEngine;
-            this.graphData = { type: '', data: { labels: [], datasets: [] }, options: {} };
-            this.subscription = null;
-        }
-        DataGraphElement.prototype.updateDataGraph = function () {
-            $('#chartjsGraph, .chartjs-hidden-iframe').remove();
-            if (this.graphData.type === 'pie') {
-                $('#graph-container').css('width', '600px');
-            }
-            else {
-                $('#graph-container').css('width', '100%');
-            }
-            $('#graph-container').append('<canvas id="chartjsGraph"></canvas>');
-            var context = $("#chartjsGraph")[0];
-            var chart = new Chart(context, {
-                type: this.graphData.type,
-                data: this.graphData.data,
-                options: this.graphData.options
-            });
-        };
-        DataGraphElement.prototype.attached = function () {
-            var _this = this;
-            this.subscription = this.bindingEngine.propertyObserver(this.graphData, 'data')
-                .subscribe(function (newValue, oldValue) { return _this.updateDataGraph(); });
-        };
-        DataGraphElement.prototype.detached = function () {
-            this.subscription.dispose();
-        };
-        __decorate([
-            aurelia_framework_2.bindable,
-            __metadata("design:type", Object)
-        ], DataGraphElement.prototype, "graphData", void 0);
-        DataGraphElement = __decorate([
-            aurelia_framework_1.customElement('data-graph'),
-            aurelia_framework_2.useView('./data-graph-element.html'),
-            aurelia_framework_2.inject(aurelia_binding_1.BindingEngine),
-            __metadata("design:paramtypes", [aurelia_binding_1.BindingEngine])
-        ], DataGraphElement);
-        return DataGraphElement;
-    }());
-    exports.DataGraphElement = DataGraphElement;
-});
-
-var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
-};
-var __metadata = (this && this.__metadata) || function (k, v) {
-    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
-};
-define('resources/elements/market-view/data-table-element',["require", "exports", "aurelia-framework", "aurelia-framework", "aurelia-binding", "aurelia-event-aggregator", "jquery", "datatables.net-buttons-bs", "./../../../scripts/vendors/pivot/pivot.min.js", "./../../../scripts/vendors/pivot/jquery_pivot.js"], function (require, exports, aurelia_framework_1, aurelia_framework_2, aurelia_binding_1, aurelia_event_aggregator_1, $, DataTable) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    var DataTableElement = (function () {
-        function DataTableElement(bindingEngine, events) {
-            this.bindingEngine = bindingEngine;
-            this.events = events;
-            this.tableInput = { json: '' };
-            this.displayAllRows = false;
-            this.subscription = null;
-            this.dataTable = null;
-            this.skipCols = 1;
-        }
-        DataTableElement.prototype.spinnerOpen = function () {
-            this.events.publish('$openSpinner');
-        };
-        DataTableElement.prototype.spinnerClose = function () {
-            this.events.publish('$closeSpinner');
-        };
-        DataTableElement.prototype.updatePivottable = function () {
-            this.setupPivot(this.tableInput);
-        };
-        DataTableElement.prototype.outputData = function () {
-            var data = this.dataTable.buttons.exportData({
-                modifier: {
-                    order: this.displayAllRows ? 'current' : 'index',
-                    page: this.displayAllRows ? 'all' : 'current',
-                },
-                format: {
-                    body: function (innerHtml, rowIndex, columnIndex, cellNode) {
-                        var value = Number(innerHtml.replace('$', '').replace('%', '').replace('--', '0').replace(/,/g, ''));
-                        return !isNaN(value) ? value : innerHtml;
-                    }
-                }
-            });
-            this.tableOutput = { data: data, skipCols: this.skipCols };
-        };
-        DataTableElement.prototype.setupPivot = function (input) {
-            var _this = this;
-            this.spinnerOpen();
-            if (DataTable) {
-                $('.pivot_header_fields').remove();
-                input.callbacks = { afterUpdateResults: function () {
-                        _this.dataTable = $('#data-table-container table').DataTable({
-                            scrollY: "500px",
-                            scrollX: "1200px",
-                            scrollCollapse: true,
-                            select: 'single'
-                        });
-                        $('#data-table-container table').addClass('table-bordered');
-                        $('#data-table-container table th, #data-table-container table td').css('white-space', 'nowrap');
-                        _this.dataTable.on('draw', function () {
-                            _this.outputData();
-                        });
-                        _this.dataTable.column('0:visible').order('asc').draw();
-                    } };
-                $('#data-menu-container').pivot_display('setup', input);
-                this.spinnerClose();
-            }
-            else {
-                setTimeout(function () {
-                    _this.setupPivot(input);
-                }, 100);
-            }
-        };
-        DataTableElement.prototype.attached = function () {
-            var _this = this;
-            this.subscription = this.bindingEngine.propertyObserver(this.tableInput, 'json')
-                .subscribe(function (newValue, oldValue) { return _this.updatePivottable(); });
-            this.subscription = this.bindingEngine.propertyObserver(this, 'displayAllRows')
-                .subscribe(function (newValue, oldValue) { return _this.outputData(); });
-        };
-        DataTableElement.prototype.detached = function () {
-            this.subscription.dispose();
-        };
-        __decorate([
-            aurelia_framework_2.bindable,
-            __metadata("design:type", Object)
-        ], DataTableElement.prototype, "tableInput", void 0);
-        __decorate([
-            aurelia_framework_2.bindable,
-            __metadata("design:type", Boolean)
-        ], DataTableElement.prototype, "displayAllRows", void 0);
-        __decorate([
-            aurelia_framework_2.bindable({ defaultBindingMode: aurelia_framework_2.bindingMode.twoWay }),
-            __metadata("design:type", Object)
-        ], DataTableElement.prototype, "tableOutput", void 0);
-        DataTableElement = __decorate([
-            aurelia_framework_1.customElement('data-table'),
-            aurelia_framework_2.useView('./data-table-element.html'),
-            aurelia_framework_2.inject(aurelia_binding_1.BindingEngine, aurelia_event_aggregator_1.EventAggregator),
-            __metadata("design:paramtypes", [aurelia_binding_1.BindingEngine, aurelia_event_aggregator_1.EventAggregator])
-        ], DataTableElement);
-        return DataTableElement;
-    }());
-    exports.DataTableElement = DataTableElement;
-});
-
-var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
-};
-var __metadata = (this && this.__metadata) || function (k, v) {
-    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
-};
-define('resources/elements/market-view/pivot-table-element',["require", "exports", "aurelia-framework", "aurelia-framework", "aurelia-binding", "jquery", "pivottable"], function (require, exports, aurelia_framework_1, aurelia_framework_2, aurelia_binding_1, $, PivotTable) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    var PivotTableElement = (function () {
-        function PivotTableElement(bindingEngine) {
-            this.bindingEngine = bindingEngine;
-            this.tableData = { json: '' };
-            this.subscription = null;
-        }
-        PivotTableElement.prototype.updatePivottable = function () {
-            this.setupPivot(this.tableData.input);
-        };
-        PivotTableElement.prototype.setupPivot = function (input) {
-            var _this = this;
-            if (PivotTable) {
-                $("#pivot-table-container").pivot(input, {
-                    rows: ["Brand", "Model"],
-                    cols: ["Date"],
-                    aggregator: this.brandshare('revenue', 'whole'),
-                    colOrder: 'value_a_to_z'
-                });
-            }
-            else {
-                setTimeout(function () {
-                    _this.setupPivot(input);
-                }, 100);
-            }
-        };
-        PivotTableElement.prototype.brandshare = function (dataType, dataFormat) {
-            return function (data, rowKey, colKey) {
-                return {
-                    result: 0,
-                    total: 0,
-                    push: function (record) { this.result = dataType === 'revenue' ? record.Revenue : record.Units; this.total += this.result; },
-                    value: function () { return colKey.length ? this.result : this.total; },
-                    format: function (x) { x = x.toFixed(2).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ","); return dataFormat === 'whole' ? x : x + '%'; },
-                };
-            };
-        };
-        PivotTableElement.prototype.attached = function () {
-            var _this = this;
-            this.subscription = this.bindingEngine.propertyObserver(this.tableData, 'input')
-                .subscribe(function (newValue, oldValue) { return _this.updatePivottable(); });
-        };
-        PivotTableElement.prototype.detached = function () {
-            this.subscription.dispose();
-        };
-        __decorate([
-            aurelia_framework_2.bindable,
-            __metadata("design:type", Object)
-        ], PivotTableElement.prototype, "tableData", void 0);
-        PivotTableElement = __decorate([
-            aurelia_framework_1.customElement('pivot-table'),
-            aurelia_framework_2.useView('./pivot-table-element.html'),
-            aurelia_framework_2.inject(aurelia_binding_1.BindingEngine),
-            __metadata("design:paramtypes", [aurelia_binding_1.BindingEngine])
-        ], PivotTableElement);
-        return PivotTableElement;
-    }());
-    exports.PivotTableElement = PivotTableElement;
-});
-
-var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
-};
-var __metadata = (this && this.__metadata) || function (k, v) {
-    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
-};
-define('resources/elements/common/load-spinner-element',["require", "exports", "aurelia-framework", "aurelia-framework", "aurelia-binding", "aurelia-event-aggregator", "jquery"], function (require, exports, aurelia_framework_1, aurelia_framework_2, aurelia_binding_1, aurelia_event_aggregator_1, $) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    var LoadSpinnerElement = (function () {
-        function LoadSpinnerElement(bindingEngine, events) {
-            this.bindingEngine = bindingEngine;
-            this.events = events;
-            this.toggle = false;
-            this.subscriptionList = [];
-        }
-        LoadSpinnerElement.prototype.attached = function () {
-            this.subscriptionList.push(this.events.subscribe('$openSpinner', function () { return $('#load-spinner').show(); }));
-            this.subscriptionList.push(this.events.subscribe('$closeSpinner', function () { return $('#load-spinner').hide(); }));
-        };
-        LoadSpinnerElement.prototype.detached = function () {
-            for (var i = 0, ii = this.subscriptionList.length; i < ii; i++) {
-                this.subscriptionList[i].dispose();
-            }
-        };
-        __decorate([
-            aurelia_framework_2.bindable,
-            __metadata("design:type", Boolean)
-        ], LoadSpinnerElement.prototype, "toggle", void 0);
-        LoadSpinnerElement = __decorate([
-            aurelia_framework_1.customElement('load-spinner'),
-            aurelia_framework_2.useView('./load-spinner-element.html'),
-            aurelia_framework_2.inject(aurelia_binding_1.BindingEngine, aurelia_event_aggregator_1.EventAggregator),
-            __metadata("design:paramtypes", [aurelia_binding_1.BindingEngine, aurelia_event_aggregator_1.EventAggregator])
-        ], LoadSpinnerElement);
-        return LoadSpinnerElement;
-    }());
-    exports.LoadSpinnerElement = LoadSpinnerElement;
-});
-
 (function( $ ){
   'use strict';
 
@@ -1541,12 +1541,12 @@ define("scripts/vendors/pivot/jquery_pivot.js", [],function(){});
 
 define('text!app.html', ['module'], function(module) { module.exports = "<template>\n    <div class=\"container body\">\n        <div class=\"main_container\">\n            <!-- main content -->\n            <router-view></router-view>\n            <!-- /main-content -->\n\n            <!-- tsite footer -->\n            <compose view-model=\"./pages/page-elements/site-footer\"></compose>\n            <!-- /site footer -->\n        </div>\n    </div>\n    <load-spinner></load-spinner>\n</template>"; });
 define('text!not-found.html', ['module'], function(module) { module.exports = "<template>\n\t<!-- Header -->\n    <header>\n        <div class=\"container sub-header\">\n            <div class=\"row\">\n                <div class=\"col-lg-12\">\n                    <div class=\"intro-text\">\n                        <span class=\"name\">Whoops, nothing here!</span>\n                    </div>\n                </div>\n            </div>\n        </div>\n    </header>\n\n  \t<section class=\"container text-center\">\n    \t<h1>Something is broken…</h1>\n    \t<p>The page cannot be found.</p>\n  \t</section>\n</template>\n"; });
-define('text!pages/page-elements/sidebar-menu.html', ['module'], function(module) { module.exports = "<template bindable=\"router\">\r\n          <div class=\"col-md-3 left_col\">\r\n          <div class=\"left_col scroll-view\">\r\n            <div class=\"navbar nav_title\" style=\"border: 0;\">\r\n              <a href=\"index.html\" class=\"site_title\"><i class=\"fa fa-paw\"></i> <span>Market View!</span></a>\r\n            </div>\r\n            <div class=\"clearfix\"></div>\r\n\r\n            <!-- menu profile quick info -->\r\n            <div class=\"profile\">\r\n              <div class=\"profile_pic\">\r\n                <img src=\"src/img/img.jpg\" alt=\"...\" class=\"img-circle profile_img\">\r\n              </div>\r\n              <div class=\"profile_info\">\r\n                <span>Welcome,</span>\r\n                <h2>John Doe</h2>\r\n              </div>\r\n            </div>\r\n            <!-- /menu profile quick info -->\r\n\r\n            <br />\r\n  \r\n            <!-- sidebar menu -->\r\n            <div id=\"sidebar-menu\" class=\"main_menu_side hidden-print main_menu\">\r\n              <div class=\"menu_section active\">\r\n                  <h3>General</h3>\r\n                  <ul class=\"nav side-menu\" style=\"\">\r\n                      <li><a id=\"dataModelli\" click.delegate=\"anchorClicked($event)\"><i class=\"fa fa-database\"></i> Market View <span class=\"fa fa-chevron-down\"></span></a>\r\n                      </li>\r\n                  </ul>\r\n              </div>\r\n            </div>\r\n            <!-- /sidebar menu -->\r\n\r\n            <!-- /menu footer buttons -->\r\n            <div class=\"sidebar-footer hidden-small\">\r\n              <a data-toggle=\"tooltip\" data-placement=\"top\" title=\"Settings\">\r\n                <span class=\"glyphicon glyphicon-cog\" aria-hidden=\"true\"></span>\r\n              </a>\r\n              <a data-toggle=\"tooltip\" data-placement=\"top\" title=\"FullScreen\">\r\n                <span class=\"glyphicon glyphicon-fullscreen\" aria-hidden=\"true\"></span>\r\n              </a>\r\n              <a data-toggle=\"tooltip\" data-placement=\"top\" title=\"Lock\">\r\n                <span class=\"glyphicon glyphicon-eye-close\" aria-hidden=\"true\"></span>\r\n              </a>\r\n              <a data-toggle=\"tooltip\" data-placement=\"top\" title=\"Logout\" href=\"login.html\">\r\n                <span class=\"glyphicon glyphicon-off\" aria-hidden=\"true\"></span>\r\n              </a>\r\n            </div>\r\n            <!-- /menu footer buttons -->\r\n              \r\n          </div>\r\n        </div>\r\n</template>"; });
+define('text!pages/page-elements/sidebar-menu.html', ['module'], function(module) { module.exports = "<template bindable=\"router\">\r\n          <div class=\"col-md-3 left_col\">\r\n          <div class=\"left_col scroll-view\">\r\n            <div class=\"navbar nav_title\" style=\"border: 0;\">\r\n              <a href=\"/\" class=\"site_title\"><span>Market View!</span></a>\r\n            </div>\r\n            <div class=\"clearfix\"></div>\r\n\r\n            <br />\r\n  \r\n            <!-- sidebar menu -->\r\n            <div id=\"sidebar-menu\" class=\"main_menu_side hidden-print main_menu\">\r\n              <div class=\"menu_section active\">\r\n                  <ul class=\"nav side-menu\" style=\"\">\r\n                      <li><a id=\"dataModelli\" click.delegate=\"anchorClicked($event)\"><i class=\"fa fa-database\"></i> Market View <span class=\"fa fa-chevron-down\"></span></a>\r\n                      </li>\r\n                  </ul>\r\n              </div>\r\n            </div>\r\n            <!-- /sidebar menu -->\r\n              \r\n          </div>\r\n        </div>\r\n</template>"; });
+define('text!pages/page-elements/site-footer.html', ['module'], function(module) { module.exports = "<template>  \r\n  <!-- footer content -->\r\n        <footer>\r\n          <div class=\"pull-right\">\r\n            Gentelella - Bootstrap Admin Template by <a href=\"https://colorlib.com\">Colorlib</a>\r\n          </div>\r\n          <div class=\"clearfix\"></div>\r\n        </footer>\r\n        <!-- /footer content -->\r\n</template>"; });
+define('text!pages/page-elements/topbar-menu.html', ['module'], function(module) { module.exports = "<template>\r\n  <!-- top navigation -->\r\n        <div class=\"top_nav\">\r\n            <div class=\"nav_menu\">\r\n                <nav style=\"height: 23px;\">\r\n                </nav>\r\n            </div>\r\n            </div>\r\n            <!-- /top navigation -->        \r\n</template>"; });
 define('text!less/freelancer.css', ['module'], function(module) { module.exports = "body {\n  font-family: 'Lato', 'Helvetica Neue', Helvetica, Arial, sans-serif;\n  overflow-x: hidden;\n}\np {\n  font-size: 20px;\n}\np.small {\n  font-size: 16px;\n}\na,\na:hover,\na:focus,\na:active,\na.active {\n  color: #18BC9C;\n  outline: none;\n}\nh1,\nh2,\nh3,\nh4,\nh5,\nh6 {\n  font-family: \"Montserrat\", \"Helvetica Neue\", Helvetica, Arial, sans-serif;\n  text-transform: uppercase;\n  font-weight: 700;\n}\n/************Handshake Dividers************/\nhr.hs-light,\nhr.hs-primary {\n  padding: 0;\n  border: none;\n  border-top: solid 5px;\n  text-align: center;\n  max-width: 250px;\n  margin: 25px auto 30px;\n}\nhr.hs-light:after,\nhr.hs-primary:after {\n  content: \"\\f2b5\";\n  font-family: FontAwesome;\n  display: inline-block;\n  position: relative;\n  top: -0.8em;\n  font-size: 2em;\n  padding: 0 0.25em;\n}\nhr.hs-light {\n  border-color: white;\n}\nhr.hs-light:after {\n  background-color: #18BC9C;\n  color: white;\n}\nhr.hs-primary {\n  border-color: #2C3E50;\n}\nhr.hs-primary:after {\n  background-color: white;\n  color: #2C3E50;\n}\n/************Handshake Dividers************/\n/************Star Dividers************/\nhr.star-light,\nhr.star-primary {\n  padding: 0;\n  border: none;\n  border-top: solid 5px;\n  text-align: center;\n  max-width: 250px;\n  margin: 25px auto 30px;\n}\nhr.star-light:after,\nhr.star-primary:after {\n  content: \"\\f005\";\n  font-family: FontAwesome;\n  display: inline-block;\n  position: relative;\n  top: -0.8em;\n  font-size: 2em;\n  padding: 0 0.25em;\n}\nhr.star-light {\n  border-color: white;\n}\nhr.star-light:after {\n  background-color: #18BC9C;\n  color: white;\n}\nhr.star-primary {\n  border-color: #2C3E50;\n}\nhr.star-primary:after {\n  background-color: white;\n  color: #2C3E50;\n}\n/************Star Dividers************/\n.img-centered {\n  margin: 0 auto;\n}\nheader {\n  text-align: center;\n  background: #18BC9C;\n  color: white;\n}\nheader .container {\n  padding-top: 100px;\n  padding-bottom: 50px;\n}\nheader .container.sub-header {\n  padding-top: 125px;\n  padding-bottom: 25px;\n}\nheader img {\n  display: block;\n  margin: 0 auto 20px;\n}\nheader .intro-text .name {\n  display: block;\n  font-family: \"Montserrat\", \"Helvetica Neue\", Helvetica, Arial, sans-serif;\n  text-transform: uppercase;\n  font-weight: 700;\n  font-size: 2em;\n}\nheader .intro-text .skills {\n  font-size: 1.25em;\n  font-weight: 300;\n}\n@media (min-width: 768px) {\n  header .container {\n    padding-top: 200px;\n    padding-bottom: 100px;\n  }\n  header .intro-text .name {\n    font-size: 4.75em;\n  }\n  header .intro-text .skills {\n    font-size: 1.75em;\n  }\n}\n.navbar-custom {\n  background: #2C3E50;\n  font-family: \"Montserrat\", \"Helvetica Neue\", Helvetica, Arial, sans-serif;\n  text-transform: uppercase;\n  font-weight: 700;\n  border: none;\n}\n.navbar-custom a:focus {\n  outline: none;\n}\n.navbar-custom .navbar-brand {\n  color: white;\n}\n.navbar-custom .navbar-brand:hover,\n.navbar-custom .navbar-brand:focus,\n.navbar-custom .navbar-brand:active,\n.navbar-custom .navbar-brand.active {\n  color: white;\n}\n.navbar-custom .navbar-nav {\n  letter-spacing: 1px;\n}\n.navbar-custom .navbar-nav li a {\n  color: white;\n}\n.navbar-custom .navbar-nav li a:hover {\n  color: #18BC9C;\n  outline: none;\n}\n.navbar-custom .navbar-nav li a:focus,\n.navbar-custom .navbar-nav li a:active {\n  color: white;\n}\n.navbar-custom .navbar-nav li.active a {\n  color: white;\n  background: #18BC9C;\n}\n.navbar-custom .navbar-nav li.active a:hover,\n.navbar-custom .navbar-nav li.active a:focus,\n.navbar-custom .navbar-nav li.active a:active {\n  color: white;\n  background: #18BC9C;\n}\n.navbar-custom .navbar-toggle {\n  color: white;\n  text-transform: uppercase;\n  font-size: 10px;\n  border-color: white;\n}\n.navbar-custom .navbar-toggle:hover,\n.navbar-custom .navbar-toggle:focus {\n  background-color: #18BC9C;\n  color: white;\n  border-color: #18BC9C;\n}\n@media (min-width: 768px) {\n  .navbar-custom {\n    padding: 25px 0;\n    -webkit-transition: padding 0.3s;\n    -moz-transition: padding 0.3s;\n    transition: padding 0.3s;\n  }\n  .navbar-custom .navbar-brand {\n    font-size: 2em;\n    -webkit-transition: all 0.3s;\n    -moz-transition: all 0.3s;\n    transition: all 0.3s;\n  }\n  .navbar-custom.affix {\n    padding: 10px 0;\n  }\n  .navbar-custom.affix .navbar-brand {\n    font-size: 1.5em;\n  }\n}\nsection {\n  padding: 100px 0;\n}\nsection h2 {\n  margin: 0;\n  font-size: 3em;\n}\nsection.success {\n  background: #18BC9C;\n  color: white;\n}\n@media (max-width: 767px) {\n  section {\n    padding: 75px 0;\n  }\n  section.first {\n    padding-top: 75px;\n  }\n}\n#portfolio .portfolio-item {\n  margin: 0 0 15px;\n  right: 0;\n  padding-bottom: 25px;\n}\n#portfolio .portfolio-item .portfolio-link {\n  display: block;\n  position: relative;\n  max-width: 400px;\n  margin: 0 auto;\n}\n#portfolio .portfolio-item .portfolio-link .caption {\n  background: rgba(24, 188, 156, 0.9);\n  position: absolute;\n  width: 100%;\n  height: 100%;\n  opacity: 0;\n  transition: all ease 0.5s;\n  -webkit-transition: all ease 0.5s;\n  -moz-transition: all ease 0.5s;\n}\n#portfolio .portfolio-item .portfolio-link .caption:hover {\n  opacity: 1;\n}\n#portfolio .portfolio-item .portfolio-link .caption .caption-content {\n  position: absolute;\n  width: 100%;\n  height: 20px;\n  font-size: 20px;\n  text-align: center;\n  top: 50%;\n  margin-top: -12px;\n  color: white;\n}\n#portfolio .portfolio-item .portfolio-link .caption .caption-content i {\n  margin-top: -12px;\n}\n#portfolio .portfolio-item .portfolio-link .caption .caption-content h3,\n#portfolio .portfolio-item .portfolio-link .caption .caption-content h4 {\n  margin: 0;\n}\n#portfolio * {\n  z-index: 2;\n}\n@media (min-width: 767px) {\n  #portfolio .portfolio-item {\n    margin: 0 0 30px;\n  }\n}\n.floating-label-form-group {\n  position: relative;\n  margin-bottom: 0;\n  padding-bottom: 0.5em;\n  border-bottom: 1px solid #eeeeee;\n}\n.floating-label-form-group input,\n.floating-label-form-group textarea {\n  z-index: 1;\n  position: relative;\n  padding-right: 0;\n  padding-left: 0;\n  border: none;\n  border-radius: 0;\n  font-size: 1.5em;\n  background: none;\n  box-shadow: none !important;\n  resize: none;\n}\n.floating-label-form-group label {\n  display: block;\n  z-index: 0;\n  position: relative;\n  top: 2em;\n  margin: 0;\n  font-size: 0.85em;\n  line-height: 1.764705882em;\n  vertical-align: middle;\n  vertical-align: baseline;\n  opacity: 0;\n  -webkit-transition: top 0.3s ease,opacity 0.3s ease;\n  -moz-transition: top 0.3s ease,opacity 0.3s ease;\n  -ms-transition: top 0.3s ease,opacity 0.3s ease;\n  transition: top 0.3s ease,opacity 0.3s ease;\n}\n.floating-label-form-group:not(:first-child) {\n  padding-left: 14px;\n  border-left: 1px solid #eeeeee;\n}\n.floating-label-form-group-with-value label {\n  top: 0;\n  opacity: 1;\n}\n.floating-label-form-group-with-focus label {\n  color: #18BC9C;\n}\nlabel.label-lg {\n  font-size: 1.5em;\n  line-height: 1.764705882em;\n}\nform .row:first-child .floating-label-form-group {\n  border-top: 1px solid #eeeeee;\n}\nfooter {\n  color: white;\n}\nfooter h3 {\n  margin-bottom: 30px;\n}\nfooter .footer-above {\n  padding-top: 50px;\n  background-color: #2C3E50;\n}\nfooter .footer-col {\n  margin-bottom: 50px;\n}\nfooter .footer-below {\n  padding: 25px 0;\n  background-color: #233140;\n}\n.btn-outline {\n  color: white;\n  font-size: 20px;\n  border: solid 2px white;\n  background: transparent;\n  transition: all 0.3s ease-in-out;\n  margin-top: 15px;\n}\n.btn-outline:hover,\n.btn-outline:focus,\n.btn-outline:active,\n.btn-outline.active {\n  color: #18BC9C;\n  background: white;\n  border: solid 2px white;\n}\n.btn-primary {\n  color: white;\n  background-color: #2C3E50;\n  border-color: #2C3E50;\n  font-weight: 700;\n}\n.btn-primary:hover,\n.btn-primary:focus,\n.btn-primary:active,\n.btn-primary.active,\n.open .dropdown-toggle.btn-primary {\n  color: white;\n  background-color: #1a242f;\n  border-color: #161f29;\n}\n.btn-primary:active,\n.btn-primary.active,\n.open .dropdown-toggle.btn-primary {\n  background-image: none;\n}\n.btn-primary.disabled,\n.btn-primary[disabled],\nfieldset[disabled] .btn-primary,\n.btn-primary.disabled:hover,\n.btn-primary[disabled]:hover,\nfieldset[disabled] .btn-primary:hover,\n.btn-primary.disabled:focus,\n.btn-primary[disabled]:focus,\nfieldset[disabled] .btn-primary:focus,\n.btn-primary.disabled:active,\n.btn-primary[disabled]:active,\nfieldset[disabled] .btn-primary:active,\n.btn-primary.disabled.active,\n.btn-primary[disabled].active,\nfieldset[disabled] .btn-primary.active {\n  background-color: #2C3E50;\n  border-color: #2C3E50;\n}\n.btn-primary .badge {\n  color: #2C3E50;\n  background-color: white;\n}\n.btn-success {\n  color: white;\n  background-color: #18BC9C;\n  border-color: #18BC9C;\n  font-weight: 700;\n}\n.btn-success:hover,\n.btn-success:focus,\n.btn-success:active,\n.btn-success.active,\n.open .dropdown-toggle.btn-success {\n  color: white;\n  background-color: #128f76;\n  border-color: #11866f;\n}\n.btn-success:active,\n.btn-success.active,\n.open .dropdown-toggle.btn-success {\n  background-image: none;\n}\n.btn-success.disabled,\n.btn-success[disabled],\nfieldset[disabled] .btn-success,\n.btn-success.disabled:hover,\n.btn-success[disabled]:hover,\nfieldset[disabled] .btn-success:hover,\n.btn-success.disabled:focus,\n.btn-success[disabled]:focus,\nfieldset[disabled] .btn-success:focus,\n.btn-success.disabled:active,\n.btn-success[disabled]:active,\nfieldset[disabled] .btn-success:active,\n.btn-success.disabled.active,\n.btn-success[disabled].active,\nfieldset[disabled] .btn-success.active {\n  background-color: #18BC9C;\n  border-color: #18BC9C;\n}\n.btn-success .badge {\n  color: #18BC9C;\n  background-color: white;\n}\n.btn-social {\n  display: inline-block;\n  height: 50px;\n  width: 50px;\n  border: 2px solid white;\n  border-radius: 100%;\n  text-align: center;\n  font-size: 20px;\n  line-height: 45px;\n}\n.btn:focus,\n.btn:active,\n.btn.active {\n  outline: none;\n}\n.scroll-top {\n  position: fixed;\n  right: 2%;\n  bottom: 2%;\n  width: 50px;\n  height: 50px;\n  z-index: 1049;\n}\n.scroll-top .btn {\n  font-size: 20px;\n  width: 50px;\n  height: 50px;\n  border-radius: 100%;\n  line-height: 28px;\n}\n.scroll-top .btn:focus {\n  outline: none;\n}\n.portfolio-modal .modal-content {\n  border-radius: 0;\n  background-clip: border-box;\n  -webkit-box-shadow: none;\n  box-shadow: none;\n  border: none;\n  min-height: 100%;\n  padding: 100px 0;\n  text-align: center;\n}\n.portfolio-modal .modal-content h2 {\n  margin: 0;\n  font-size: 3em;\n}\n.portfolio-modal .modal-content img {\n  margin-bottom: 30px;\n}\n.portfolio-modal .modal-content .item-details {\n  margin: 30px 0;\n}\n.portfolio-modal .close-modal {\n  position: absolute;\n  width: 75px;\n  height: 75px;\n  background-color: transparent;\n  top: 25px;\n  right: 25px;\n  cursor: pointer;\n}\n.portfolio-modal .close-modal:hover {\n  opacity: 0.3;\n}\n.portfolio-modal .close-modal .lr {\n  height: 75px;\n  width: 1px;\n  margin-left: 35px;\n  background-color: #2C3E50;\n  transform: rotate(45deg);\n  -ms-transform: rotate(45deg);\n  /* IE 9 */\n  -webkit-transform: rotate(45deg);\n  /* Safari and Chrome */\n  z-index: 1051;\n}\n.portfolio-modal .close-modal .lr .rl {\n  height: 75px;\n  width: 1px;\n  background-color: #2C3E50;\n  transform: rotate(90deg);\n  -ms-transform: rotate(90deg);\n  /* IE 9 */\n  -webkit-transform: rotate(90deg);\n  /* Safari and Chrome */\n  z-index: 1052;\n}\n.portfolio-modal .modal-backdrop {\n  opacity: 0;\n  display: none;\n}\n"; });
 define('text!less/mixins.css', ['module'], function(module) { module.exports = ""; });
 define('text!less/variables.css', ['module'], function(module) { module.exports = ""; });
-define('text!pages/page-elements/site-footer.html', ['module'], function(module) { module.exports = "<template>  \r\n  <!-- footer content -->\r\n        <footer>\r\n          <div class=\"pull-right\">\r\n            Gentelella - Bootstrap Admin Template by <a href=\"https://colorlib.com\">Colorlib</a>\r\n          </div>\r\n          <div class=\"clearfix\"></div>\r\n        </footer>\r\n        <!-- /footer content -->\r\n</template>"; });
-define('text!pages/page-elements/topbar-menu.html', ['module'], function(module) { module.exports = "<template>\r\n  <!-- top navigation -->\r\n        <div class=\"top_nav\">\r\n            <div class=\"nav_menu\">\r\n                <nav>\r\n                \r\n                <ul class=\"nav navbar-nav navbar-right\">\r\n                    <li class=\"\">\r\n                    <a href=\"javascript:;\" class=\"user-profile dropdown-toggle\" data-toggle=\"dropdown\" aria-expanded=\"false\">\r\n                        <img src=\"src/img/img.jpg\" alt=\"\">John Doe\r\n                        <span class=\" fa fa-angle-down\"></span>\r\n                    </a>\r\n                    <ul class=\"dropdown-menu dropdown-usermenu pull-right\">\r\n                        <li><a href=\"javascript:;\"> Profile</a></li>\r\n                        <li>\r\n                        <a href=\"javascript:;\">\r\n                            <span class=\"badge bg-red pull-right\">50%</span>\r\n                            <span>Settings</span>\r\n                        </a>\r\n                        </li>\r\n                        <li><a href=\"javascript:;\">Help</a></li>\r\n                        <li><a href=\"login.html\"><i class=\"fa fa-sign-out pull-right\"></i> Log Out</a></li>\r\n                    </ul>\r\n                    </li>\r\n\r\n                    <li role=\"presentation\" class=\"dropdown\">\r\n                    <a href=\"javascript:;\" class=\"dropdown-toggle info-number\" data-toggle=\"dropdown\" aria-expanded=\"false\">\r\n                        <i class=\"fa fa-envelope-o\"></i>\r\n                        <span class=\"badge bg-green\">6</span>\r\n                    </a>\r\n                    <ul id=\"menu1\" class=\"dropdown-menu list-unstyled msg_list\" role=\"menu\">\r\n                        <li>\r\n                        <a>\r\n                            <span class=\"image\"><img src=\"src/img/img.jpg\" alt=\"Profile Image\" /></span>\r\n                            <span>\r\n                            <span>John Smith</span>\r\n                            <span class=\"time\">3 mins ago</span>\r\n                            </span>\r\n                            <span class=\"message\">\r\n                            Film festivals used to be do-or-die moments for movie makers. They were where...\r\n                            </span>\r\n                        </a>\r\n                        </li>\r\n                        <li>\r\n                        <a>\r\n                            <span class=\"image\"><img src=\"src/img/img.jpg\" alt=\"Profile Image\" /></span>\r\n                            <span>\r\n                            <span>John Smith</span>\r\n                            <span class=\"time\">3 mins ago</span>\r\n                            </span>\r\n                            <span class=\"message\">\r\n                            Film festivals used to be do-or-die moments for movie makers. They were where...\r\n                            </span>\r\n                        </a>\r\n                        </li>\r\n                        <li>\r\n                        <a>\r\n                            <span class=\"image\"><img src=\"src/img/img.jpg\" alt=\"Profile Image\" /></span>\r\n                            <span>\r\n                            <span>John Smith</span>\r\n                            <span class=\"time\">3 mins ago</span>\r\n                            </span>\r\n                            <span class=\"message\">\r\n                            Film festivals used to be do-or-die moments for movie makers. They were where...\r\n                            </span>\r\n                        </a>\r\n                        </li>\r\n                        <li>\r\n                        <a>\r\n                            <span class=\"image\"><img src=\"src/img/img.jpg\" alt=\"Profile Image\" /></span>\r\n                            <span>\r\n                            <span>John Smith</span>\r\n                            <span class=\"time\">3 mins ago</span>\r\n                            </span>\r\n                            <span class=\"message\">\r\n                            Film festivals used to be do-or-die moments for movie makers. They were where...\r\n                            </span>\r\n                        </a>\r\n                        </li>\r\n                        <li>\r\n                        <div class=\"text-center\">\r\n                            <a>\r\n                            <strong>See All Alerts</strong>\r\n                            <i class=\"fa fa-angle-right\"></i>\r\n                            </a>\r\n                        </div>\r\n                        </li>\r\n                    </ul>\r\n                    </li>\r\n                </ul>\r\n                </nav>\r\n            </div>\r\n            </div>\r\n            <!-- /top navigation -->        \r\n</template>"; });
 define('text!pages/home/components/index.html', ['module'], function(module) { module.exports = "<template>\r\n    <!-- sidebar menu -->\r\n    <compose router.bind=\"router\" view-model=\"pages/page-elements/sidebar-menu\"></compose>\r\n    <!-- /sidebar menu -->\r\n\r\n    <!-- top navigation -->\r\n    <compose view-model=\"pages/page-elements/topbar-menu\"></compose>\r\n    <!-- /top navigation -->\r\n\r\n    <div class=\"right_col\" role=\"main\">\r\n        <!-- market view panel -->\r\n        <div id=\"market_view\" class=\"row\">\r\n            <div class=\"col-md-12 col-sm-12 col-xs-12\">\r\n                <div class=\"x_panel\">\r\n                    <div class=\"x_title\">\r\n                        <h2 id=\"view_title\">Market View</h2>\r\n                        <div class=\"clearfix\"></div>\r\n                    </div>\r\n                    <div class=\"x_content\">\r\n                        <div id=\"market_view_controls\">\r\n                            <div class=\"x_panel\">\r\n                                <div class=\"x_content\">\r\n                                    <data-control page-state.bind=\"pageState\" compare-list.bind=\"compareList\" compare-options.bind=\"compareOptions\" exclude-industry.bind=\"excludeIndustry\" data-types.bind=\"dataTypes\" filter-list.bind=\"filterList\" display-all-rows.bind=\"displayAllRows\"></data-control>\r\n                                </div>\r\n                            </div>\r\n                        </div>\r\n                        \r\n                        <div id=\"market_view_chart\">\r\n                            <div class=\"x_panel\">\r\n                                <div class=\"x_content\">\r\n                                    <data-graph graph-data.bind=\"graphData\"></data-graph>\r\n                                </div>\r\n                            </div>\r\n                        </div>\r\n\r\n                        <div id=\"market_view_table\">\r\n                            <div class=\"x_panel\">\r\n                                <div class=\"x_content\">\r\n                                    <data-table table-input.bind=\"tableInput\" table-output.bind=\"tableOutput\" display-all-rows.bind=\"displayAllRows\"></data-table>\r\n                                </div>\r\n                            </div>\r\n                        </div>\r\n                    </div>\r\n                </div>\r\n            </div>\r\n        </div> \r\n    </div>\r\n</template>"; });
 define('text!resources/elements/common/load-spinner-element.html', ['module'], function(module) { module.exports = "<template>\r\n\t<require from=\"pure-css-loader/css-loader.css\"></require>\r\n\t<div id=\"load-spinner\" style=\"display: none;\">\r\n\t\t<div class=\"loader loader-default is-active\"></div>\r\n\t</div>\r\n</template>"; });
 define('text!resources/elements/market-view/data-control-element.html', ['module'], function(module) { module.exports = "<template>\r\n\t<div id=\"control-container\" class=\"row center-block\">\r\n\t\t<div class=\"pull-left\" style=\"margin-right: 15px;\">\r\n\t\t\t<div class=\"btn-group\">\r\n              \t<button type=\"button\" class=\"btn btn-dark\">Data Model</button>\r\n              \t<button type=\"button\" class=\"btn btn-dark dropdown-toggle\" data-toggle=\"dropdown\" aria-expanded=\"false\">\r\n                \t<span class=\"caret\"></span>\r\n                \t<span class=\"sr-only\">Toggle Dropdown</span>\r\n              \t</button>\r\n              \t<div class=\"btn-group-vertical dropdown-menu\" data-toggle=\"buttons\" role=\"menu\">\r\n\t                <label class=\"btn btn-dark active\">\r\n\t\t\t         \t<input type=\"radio\" name=\"data_model\" value=\"brandshare\" id=\"brandshareModel\"> Brand Share\r\n\t\t\t        </label>\r\n\t\t\t        <label class=\"btn btn-dark\">\r\n\t\t\t          \t<input type=\"radio\" name=\"data_model\" value=\"salesgrowth\" id=\"salesgrowthModel\"> Sales Growth\r\n\t\t\t        </label>\r\n\t\t\t        <label class=\"btn btn-dark\">\r\n\t\t\t          \t<input type=\"radio\" name=\"data_model\" value=\"pricing\" id=\"pricingModel\"> Pricing\r\n\t\t\t        </label>\r\n\t\t\t        <label class=\"btn btn-dark\">\r\n\t\t\t          \t<input type=\"radio\" name=\"data_model\" value=\"ranking\" id=\"rankingModel\"> Ranking\r\n\t\t\t        </label>\r\n\t            </div>\t\r\n            </div>\r\n\t\t</div> \r\n\r\n\t\t<div class=\"pull-left\" style=\"margin-right: 15px;\">\r\n\t\t\t<div id=\"dataTypeList\" class=\"dropdown btn-group\">\r\n              \t<button type=\"button\" class=\"btn btn-dark\">Data Type</button>\r\n              \t<button type=\"button\" class=\"btn btn-dark dropdown-toggle\" data-toggle=\"dropdown\" aria-expanded=\"false\">\r\n                \t<span class=\"caret\"></span>\r\n                \t<span class=\"sr-only\">Toggle Dropdown</span>\r\n              \t</button>\r\n              \t<div class=\"btn-group-vertical dropdown-menu\" data-toggle=\"buttons\" role=\"menu\">\r\n              \t\t<label if.bind=\"pageState.model === 'ranking'\" class=\"btn btn-dark active\" repeat.for=\"type of dataTypes\">\r\n              \t\t\t<input type=\"checkbox\" name=\"data_type\" value=\"${type}\" checked> ${type}\r\n              \t\t</label>\r\n              \t\t<label if.bind=\"pageState.model !== 'ranking'\" class=\"btn btn-dark\" class.bind=\"$first ? 'active' : ''\" repeat.for=\"type of dataTypes\">\r\n              \t\t\t<input type=\"radio\" name=\"data_type\" value=\"${type}\"> ${type}\r\n              \t\t</label>\r\n\t            </div>\t\r\n            </div>\r\n\t\t</div>\r\n\r\n\t\t<div class=\"pull-left\" style=\"margin-right: 15px;\">\r\n\t\t\t<div id=\"filterList\" class=\"dropdown keep-open btn-group\">\r\n              \t<button type=\"button\" class=\"dLabel btn btn-dark\">Filter</button>\r\n              \t<button type=\"button\" class=\"dToggle btn btn-dark dropdown-toggle\" data-toggle=\"dropdown\" aria-expanded=\"false\">\r\n                \t<span class=\"caret\"></span>\r\n                \t<span class=\"sr-only\">Toggle Dropdown</span>\r\n              \t</button>\r\n              \t<div class=\"btn-group-vertical dropdown-menu\" data-toggle=\"buttons\" role=\"menu\">\r\n              \t\t<label class=\"btn btn-dark\" repeat.for=\"item of filterList\">\r\n              \t\t\t<input type=\"checkbox\" name=\"filter_item\" value=\"${item}\"> ${item}\r\n              \t\t</label>\r\n\t            </div>\t\r\n            </div>\r\n\t\t</div>\r\n\r\n\t\t<div class=\"pull-left\" style=\"margin-right: 15px;\">\r\n\t\t\t<div id=\"compareEntries\" class=\"dropdown keep-open btn-group\">\r\n              \t<button type=\"button\" class=\"dLabel btn btn-dark\">Compare</button>\r\n              \t<button type=\"button\" class=\"dToggle btn btn-dark dropdown-toggle\" data-toggle=\"dropdown\" aria-expanded=\"false\">\r\n                \t<span class=\"caret\"></span>\r\n                \t<span class=\"sr-only\">Toggle Dropdown</span>\r\n              \t</button>\r\n              \t<div class=\"btn-group-vertical dropdown-menu\" data-toggle=\"buttons\" role=\"menu\">\r\n              \t\t<label class=\"btn btn-dark active\">\r\n\t\t\t          \t<input type=\"checkbox\" name=\"industry\" checked> Industry\r\n\t\t\t        </label>\r\n              \t\t<label class=\"btn btn-dark\" repeat.for=\"item of compareOptions\">\r\n              \t\t\t<input type=\"checkbox\" name=\"compare_option\" value=\"${item}\"> ${item}\r\n              \t\t</label>\r\n\t            </div>\t\r\n            </div>\r\n\t\t</div> \r\n\r\n\t\t<div class=\"pull-left\" style=\"margin-right: 15px;\">\r\n\t\t\t<div class=\"btn-group\" data-toggle=\"buttons\">\r\n\t\t        <label class=\"btn btn-dark active\">\r\n\t\t          \t<input type=\"radio\" name=\"graph_type\" value=\"line\" id=\"lineGraphType\"> Line\r\n\t\t        </label>\r\n\t\t        <label class=\"btn btn-dark\">\r\n\t\t          \t<input type=\"radio\" name=\"graph_type\" value=\"bar\" id=\"barGraphType\"> Bar\r\n\t\t        </label>\r\n\t\t        <label class=\"btn btn-dark\">\r\n\t\t          \t<input type=\"radio\" name=\"graph_type\" value=\"pie\" id=\"pieGraphType\"> Pie\r\n\t\t        </label>\r\n\t\t    </div>\r\n\t\t</div>\r\n\r\n\t\t<div class=\"pull-left\" style=\"margin-right: 15px;\">\r\n\t\t\t<div class=\"btn-group\" data-toggle=\"buttons\">\r\n\t\t        <label class=\"btn btn-dark active\">\r\n\t\t         \t<input type=\"radio\" name=\"time_frame\" value=\"week\" id=\"weekTimeFrame\"> Week\r\n\t\t        </label>\r\n\t\t        <label class=\"btn btn-dark\">\r\n\t\t          \t<input type=\"radio\" name=\"time_frame\" value=\"month\" id=\"monthTimeFrame\"> Month\r\n\t\t        </label>\r\n\t\t        <label class=\"btn btn-dark\">\r\n\t\t          \t<input type=\"radio\" name=\"time_frame\" value=\"year\" id=\"yearTimeFrame\"> Year\r\n\t\t        </label>\r\n\t\t    </div>\r\n\t\t</div>\r\n\t\t<div class=\"pull-left\" style=\"margin-right: 15px;\">\r\n\t\t\t<div class=\"btn-group\" data-toggle=\"buttons\">\r\n\t\t        <label class=\"btn btn-dark active\">\r\n\t\t         \t<input type=\"radio\" name=\"display_option\" value=\"current\" id=\"weekTimeFrame\"> Current Page\r\n\t\t        </label>\r\n\t\t        <label class=\"btn btn-dark\">\r\n\t\t          \t<input type=\"radio\" name=\"display_option\" value=\"all\" id=\"monthTimeFrame\"> All Pages\r\n\t\t        </label>\r\n\t\t    </div>\r\n\t\t</div>\r\n\t</div>\r\n</template>"; });
