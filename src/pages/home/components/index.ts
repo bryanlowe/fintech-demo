@@ -18,6 +18,7 @@ export class HomeLanding {
 	@bindable({ defaultBindingMode: bindingMode.twoWay }) compareList: string[] = [];
 	@bindable({ defaultBindingMode: bindingMode.twoWay }) dataTypes: string[] = [];
 	@bindable({ defaultBindingMode: bindingMode.twoWay }) filterList: string[] = [];
+	@bindable({ defaultBindingMode: bindingMode.twoWay }) numActiveFilters: number = 1;
 	@bindable({ defaultBindingMode: bindingMode.twoWay }) excludeIndustry: boolean = false;
 	@bindable({ defaultBindingMode: bindingMode.twoWay }) displayAllRows: boolean = false;
 	private observers: any[] = [];
@@ -488,19 +489,17 @@ export class HomeLanding {
 
 	private createChartInput() {
 		this.spinnerOpen();
-		const skipLimit = this.filterList.length + 1;
 		let graphData = [],
 			graphHeaders = [],
 			graphLabels = [],
 			colors = [],
 			rows = this.tableOutput.data.body;
 		rows.forEach((row) => {
-			graphLabels.push(row.slice(0, skipLimit).join(':'));
-			graphData.push(row.slice(skipLimit, row.length));
+			graphLabels.push(row.slice(0, this.numActiveFilters).join(':'));
+			graphData.push(row.slice(this.numActiveFilters, row.length));
 		});
 
-		graphHeaders = this.tableOutput.data.header.slice(skipLimit, this.tableOutput.data.header.length);
-
+		graphHeaders = this.tableOutput.data.header.slice(this.numActiveFilters, this.tableOutput.data.header.length);
 		// add colors
 		colors = palette('tol-rainbow', graphLabels.length).map(function(hex) {
 		    return '#' + hex;
