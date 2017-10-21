@@ -19,7 +19,7 @@ export class DataTableElement {
   @bindable({ defaultBindingMode: bindingMode.twoWay }) tableOutput: any;  
   private subscription: any = null;
   private dataTable: any = null;
-  private hiddenColumns = [0];
+  private hiddenColumns = [];
 
   constructor(private bindingEngine: BindingEngine, private events: EventAggregator){}
 
@@ -39,9 +39,7 @@ export class DataTableElement {
   }
 
   private outputData() {
-    const columnIndexes = Array.from(Array(this.dataTable.columns().header().length).keys()).filter((value) => this.hiddenColumns.indexOf(value) === -1);
-    const data = this.dataTable.buttons.exportData({
-      columns: columnIndexes,
+    let exportConfig = {
       modifier: {
         order: this.displayAllRows ? 'current' : 'index',
         page: this.displayAllRows ? 'all' : 'current',
@@ -52,14 +50,18 @@ export class DataTableElement {
           return !isNaN(value) ? value : innerHtml;
         }
       }
-    });
-    console.log(data);
-    this.tableOutput = {data: data};
+    };
+    if (this.hiddenColumns.length) {
+      exportConfig['columns'] = Array.from(Array(this.dataTable.columns().header().length).keys()).filter((value) => this.hiddenColumns.indexOf(value) === -1);
+    }
+    const data = this.dataTable.buttons.exportData(exportConfig);
+    this.tableOutput = data;
   }
 
   private setupPivot(input){
     this.spinnerOpen();
     if(DataTable){ // check if the plugin exists, there is a delay between loading and attaching
+      this.hiddenColumns = [];
       $('.pivot_header_fields').remove();
       input.callbacks = {afterUpdateResults: () => { 
           this.dataTable = $('#data-table-container table').DataTable({

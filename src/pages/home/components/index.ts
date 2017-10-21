@@ -493,13 +493,13 @@ export class HomeLanding {
 			graphHeaders = [],
 			graphLabels = [],
 			colors = [],
-			rows = this.tableOutput.data.body;
+			rows = this.tableOutput.body;
 		rows.forEach((row) => {
 			graphLabels.push(row.slice(0, filterNum).join(':'));
 			graphData.push(row.slice(filterNum, row.length));
 		});
 
-		graphHeaders = this.tableOutput.data.header.slice(filterNum, this.tableOutput.data.header.length);
+		graphHeaders = this.tableOutput.header.slice(filterNum, this.tableOutput.header.length);
 		// add colors
 		colors = palette('tol-rainbow', graphLabels.length).map(function(hex) {
 		    return '#' + hex;
