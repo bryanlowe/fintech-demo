@@ -58,29 +58,44 @@ export class DataTableElement {
   private setupPivot(input){
     this.spinnerOpen();
     if(DataTable){ // check if the plugin exists, there is a delay between loading and attaching
-        $('.pivot_header_fields').remove();
-        input.callbacks = {afterUpdateResults: () => { 
-            this.dataTable = $('#data-table-container table').DataTable({
-              scrollY: "500px",
-              scrollX: "1200px",
-              scrollCollapse: true,
-              select: 'single'
-            });
-            $('#data-table-container table').addClass('table-bordered');
-            $('#data-table-container table th, #data-table-container table td').css('white-space', 'nowrap');
-            this.dataTable.on('draw', () => {
-              this.outputData();
-            });
-            this.dataTable.column('0:visible').order('asc').draw();
-        }};
-        $('#data-menu-container').pivot_display('setup', input);
-        this.spinnerClose();
-      } else {
-        setTimeout(() => {
-          this.setupPivot(input);
-        }, 100);
-      }
+      $('.pivot_header_fields').remove();
+      input.callbacks = {afterUpdateResults: () => { 
+          this.dataTable = $('#data-table-container table').DataTable({
+            scrollY: "500px",
+            scrollX: "1200px",
+            scrollCollapse: true,
+            select: 'single'
+          });
+          $('#data-table-container table').addClass('table-bordered');
+          $('#data-table-container table th, #data-table-container table td').css('white-space', 'nowrap');
+          this.dataTable.on('draw', () => {
+            this.outputData();
+          });
+          this.dataTable.column('0:visible').order('asc').draw();
+          this.hideExtraColumns();
+      }};
+      $('#data-menu-container').pivot_display('setup', input);
+      this.spinnerClose();
+    } else {
+      setTimeout(() => {
+        this.setupPivot(input);
+      }, 100);
     }
+  }
+
+  private hideExtraColumns() {
+    const columnLimit = 12;
+    const numOfColumns = this.dataTable.columns().header().length;
+    const filterNum = $('input.row-labelable:checked').length;
+    const extraColumns = numOfColumns > columnLimit ? numOfColumns - columnLimit : 0;
+    console.log({extraColumns: extraColumns, numOfColums: numOfColumns});
+    if (extraColumns) {     
+      const hideColumns = Array.from(Array(extraColumns).keys()).filter((value) => value >= filterNum);
+      console.log(hideColumns);
+      this.dataTable.columns(hideColumns).visible(false, false);
+      this.dataTable.columns.adjust().draw(false); // adjust column sizing and redraw
+    }
+  }
 
 
 	attached(){

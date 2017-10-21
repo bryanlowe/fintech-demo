@@ -460,7 +460,7 @@ export class HomeLanding {
 	private fetchModelData() {
 		const _class = this;
 		this.spinnerOpen();
-		return this.httpClient.fetch(this.pageState.model+'/'+this.pageState.time_frame+'/'+this.pageState.data_type+'/'+this.pageState.data_format+'/'+this.pageState.company)
+		return this.httpClient.fetch('marketview/data')
 			.then(response => response.json())
 			.then(data => {_class.model = data})
 			.then(() => {
