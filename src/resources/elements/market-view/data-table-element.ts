@@ -19,7 +19,7 @@ export class DataTableElement {
   @bindable({ defaultBindingMode: bindingMode.twoWay }) tableOutput: any;  
   private subscription: any = null;
   private dataTable: any = null;
-  private skipCols = 1;
+  private hiddenColumns = [0];
 
   constructor(private bindingEngine: BindingEngine, private events: EventAggregator){}
 
@@ -39,7 +39,9 @@ export class DataTableElement {
   }
 
   private outputData() {
+    const columnIndexes = Array.from(Array(this.dataTable.columns().header().length).keys()).filter((value) => this.hiddenColumns.indexOf(value) === -1);
     const data = this.dataTable.buttons.exportData({
+      columns: columnIndexes,
       modifier: {
         order: this.displayAllRows ? 'current' : 'index',
         page: this.displayAllRows ? 'all' : 'current',
@@ -51,8 +53,8 @@ export class DataTableElement {
         }
       }
     });
-
-    this.tableOutput = {data: data, skipCols: this.skipCols};
+    console.log(data);
+    this.tableOutput = {data: data};
   }
 
   private setupPivot(input){
@@ -68,6 +70,7 @@ export class DataTableElement {
           });
           $('#data-table-container table').addClass('table-bordered');
           $('#data-table-container table th, #data-table-container table td').css('white-space', 'nowrap');
+          $('#data-table-container table th, #data-table-container table td').css('font-size', '10px');
           this.dataTable.on('draw', () => {
             this.outputData();
           });
@@ -88,11 +91,9 @@ export class DataTableElement {
     const numOfColumns = this.dataTable.columns().header().length;
     const filterNum = $('input.row-labelable:checked').length;
     const extraColumns = numOfColumns > columnLimit ? numOfColumns - columnLimit : 0;
-    console.log({extraColumns: extraColumns, numOfColums: numOfColumns});
     if (extraColumns) {     
-      const hideColumns = Array.from(Array(extraColumns).keys()).filter((value) => value >= filterNum);
-      console.log(hideColumns);
-      this.dataTable.columns(hideColumns).visible(false, false);
+      this.hiddenColumns = Array.from(Array(extraColumns).keys()).filter((value) => value >= filterNum);
+      this.dataTable.columns(this.hiddenColumns).visible(false, false);
       this.dataTable.columns.adjust().draw(false); // adjust column sizing and redraw
     }
   }

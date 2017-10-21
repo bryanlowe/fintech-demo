@@ -17,7 +17,6 @@ export class DataControlElement {
   @bindable({ defaultBindingMode: bindingMode.twoWay }) compareOptions: string[];
   @bindable({ defaultBindingMode: bindingMode.twoWay }) dataTypes: string[];
   @bindable({ defaultBindingMode: bindingMode.twoWay }) filterList: string[];
-  @bindable({ defaultBindingMode: bindingMode.twoWay }) numActiveFilters: number = 0;
   @bindable({ defaultBindingMode: bindingMode.twoWay }) excludeIndustry: boolean = false;
   @bindable({ defaultBindingMode: bindingMode.twoWay }) displayAllRows: boolean = false;
   private observers: any[] = [];
@@ -100,11 +99,6 @@ export class DataControlElement {
   initFilterOptions() {
     $('input[type="checkbox"][name="filter_item"]').change((event) => {
       const _jqThis = event.currentTarget;
-      console.log({before: this.numActiveFilters});
-      this.numActiveFilters = $(_jqThis).is(':checked') ? this.numActiveFilters + 1 : this.numActiveFilters - 1;
-      console.log({after: this.numActiveFilters, ischecked:$(_jqThis).is(':checked') });
-      if (this.numActiveFilters > this.filterList.length) this.numActiveFilters = this.filterList.length;
-      if (this.numActiveFilters < 1) this.numActiveFilters = 1;
       $('input[type="checkbox"][data-field="' + $(_jqThis).val() + '"].row-labelable').click();
     });
     if (this.pageState.model === 'ranking') $('input[type="checkbox"][name="filter_item"]:first').click();

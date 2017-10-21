@@ -238,7 +238,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-define('pages/home/components/index',["require", "exports", "aurelia-fetch-client", "aurelia-framework", "aurelia-binding", "aurelia-event-aggregator", "moment", "palette"], function (require, exports, aurelia_fetch_client_1, aurelia_framework_1, aurelia_binding_1, aurelia_event_aggregator_1, moment, palette) {
+define('pages/home/components/index',["require", "exports", "aurelia-fetch-client", "aurelia-framework", "aurelia-binding", "aurelia-event-aggregator", "jquery", "moment", "palette"], function (require, exports, aurelia_fetch_client_1, aurelia_framework_1, aurelia_binding_1, aurelia_event_aggregator_1, $, moment, palette) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var HomeLanding = (function () {
@@ -254,7 +254,6 @@ define('pages/home/components/index',["require", "exports", "aurelia-fetch-clien
             this.compareList = [];
             this.dataTypes = [];
             this.filterList = [];
-            this.numActiveFilters = 1;
             this.excludeIndustry = false;
             this.displayAllRows = false;
             this.observers = [];
@@ -617,14 +616,14 @@ define('pages/home/components/index',["require", "exports", "aurelia-fetch-clien
                 .subscribe(function (newValue, oldValue) { return _this.updateDataTableAndChart(); }));
         };
         HomeLanding.prototype.createChartInput = function () {
-            var _this = this;
             this.spinnerOpen();
+            var filterNum = $('input.row-labelable:checked').length;
             var graphData = [], graphHeaders = [], graphLabels = [], colors = [], rows = this.tableOutput.data.body;
             rows.forEach(function (row) {
-                graphLabels.push(row.slice(0, _this.numActiveFilters).join(':'));
-                graphData.push(row.slice(_this.numActiveFilters, row.length));
+                graphLabels.push(row.slice(0, filterNum).join(':'));
+                graphData.push(row.slice(filterNum, row.length));
             });
-            graphHeaders = this.tableOutput.data.header.slice(this.numActiveFilters, this.tableOutput.data.header.length);
+            graphHeaders = this.tableOutput.data.header.slice(filterNum, this.tableOutput.data.header.length);
             colors = palette('tol-rainbow', graphLabels.length).map(function (hex) {
                 return '#' + hex;
             });
@@ -676,10 +675,6 @@ define('pages/home/components/index',["require", "exports", "aurelia-fetch-clien
             aurelia_framework_1.bindable({ defaultBindingMode: aurelia_framework_1.bindingMode.twoWay }),
             __metadata("design:type", Array)
         ], HomeLanding.prototype, "filterList", void 0);
-        __decorate([
-            aurelia_framework_1.bindable({ defaultBindingMode: aurelia_framework_1.bindingMode.twoWay }),
-            __metadata("design:type", Number)
-        ], HomeLanding.prototype, "numActiveFilters", void 0);
         __decorate([
             aurelia_framework_1.bindable({ defaultBindingMode: aurelia_framework_1.bindingMode.twoWay }),
             __metadata("design:type", Boolean)
@@ -757,7 +752,6 @@ define('resources/elements/market-view/data-control-element',["require", "export
             this.bindingEngine = bindingEngine;
             this.events = events;
             this.taskQueue = taskQueue;
-            this.numActiveFilters = 0;
             this.excludeIndustry = false;
             this.displayAllRows = false;
             this.observers = [];
@@ -822,16 +816,8 @@ define('resources/elements/market-view/data-control-element',["require", "export
             });
         };
         DataControlElement.prototype.initFilterOptions = function () {
-            var _this = this;
             $('input[type="checkbox"][name="filter_item"]').change(function (event) {
                 var _jqThis = event.currentTarget;
-                console.log({ before: _this.numActiveFilters });
-                _this.numActiveFilters = $(_jqThis).is(':checked') ? _this.numActiveFilters + 1 : _this.numActiveFilters - 1;
-                console.log({ after: _this.numActiveFilters, ischecked: $(_jqThis).is(':checked') });
-                if (_this.numActiveFilters > _this.filterList.length)
-                    _this.numActiveFilters = _this.filterList.length;
-                if (_this.numActiveFilters < 1)
-                    _this.numActiveFilters = 1;
                 $('input[type="checkbox"][data-field="' + $(_jqThis).val() + '"].row-labelable').click();
             });
             if (this.pageState.model === 'ranking')
@@ -885,10 +871,6 @@ define('resources/elements/market-view/data-control-element',["require", "export
             aurelia_framework_2.bindable({ defaultBindingMode: aurelia_framework_2.bindingMode.twoWay }),
             __metadata("design:type", Array)
         ], DataControlElement.prototype, "filterList", void 0);
-        __decorate([
-            aurelia_framework_2.bindable({ defaultBindingMode: aurelia_framework_2.bindingMode.twoWay }),
-            __metadata("design:type", Number)
-        ], DataControlElement.prototype, "numActiveFilters", void 0);
         __decorate([
             aurelia_framework_2.bindable({ defaultBindingMode: aurelia_framework_2.bindingMode.twoWay }),
             __metadata("design:type", Boolean)
@@ -985,7 +967,7 @@ define('resources/elements/market-view/data-table-element',["require", "exports"
             this.displayAllRows = false;
             this.subscription = null;
             this.dataTable = null;
-            this.skipCols = 1;
+            this.hiddenColumns = [0];
         }
         DataTableElement.prototype.spinnerOpen = function () {
             this.events.publish('$openSpinner');
@@ -997,7 +979,10 @@ define('resources/elements/market-view/data-table-element',["require", "exports"
             this.setupPivot(this.tableInput);
         };
         DataTableElement.prototype.outputData = function () {
+            var _this = this;
+            var columnIndexes = Array.from(Array(this.dataTable.columns().header().length).keys()).filter(function (value) { return _this.hiddenColumns.indexOf(value) === -1; });
             var data = this.dataTable.buttons.exportData({
+                columns: columnIndexes,
                 modifier: {
                     order: this.displayAllRows ? 'current' : 'index',
                     page: this.displayAllRows ? 'all' : 'current',
@@ -1009,7 +994,8 @@ define('resources/elements/market-view/data-table-element',["require", "exports"
                     }
                 }
             });
-            this.tableOutput = { data: data, skipCols: this.skipCols };
+            console.log(data);
+            this.tableOutput = { data: data };
         };
         DataTableElement.prototype.setupPivot = function (input) {
             var _this = this;
@@ -1025,6 +1011,7 @@ define('resources/elements/market-view/data-table-element',["require", "exports"
                         });
                         $('#data-table-container table').addClass('table-bordered');
                         $('#data-table-container table th, #data-table-container table td').css('white-space', 'nowrap');
+                        $('#data-table-container table th, #data-table-container table td').css('font-size', '10px');
                         _this.dataTable.on('draw', function () {
                             _this.outputData();
                         });
@@ -1045,11 +1032,9 @@ define('resources/elements/market-view/data-table-element',["require", "exports"
             var numOfColumns = this.dataTable.columns().header().length;
             var filterNum = $('input.row-labelable:checked').length;
             var extraColumns = numOfColumns > columnLimit ? numOfColumns - columnLimit : 0;
-            console.log({ extraColumns: extraColumns, numOfColums: numOfColumns });
             if (extraColumns) {
-                var hideColumns = Array.from(Array(extraColumns).keys()).filter(function (value) { return value >= filterNum; });
-                console.log(hideColumns);
-                this.dataTable.columns(hideColumns).visible(false, false);
+                this.hiddenColumns = Array.from(Array(extraColumns).keys()).filter(function (value) { return value >= filterNum; });
+                this.dataTable.columns(this.hiddenColumns).visible(false, false);
                 this.dataTable.columns.adjust().draw(false);
             }
         };
