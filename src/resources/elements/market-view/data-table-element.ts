@@ -72,7 +72,7 @@ export class DataTableElement {
           });
           $('#data-table-container table').addClass('table-bordered');
           $('#data-table-container table th, #data-table-container table td').css('white-space', 'nowrap');
-          $('#data-table-container table th, #data-table-container table td').css('font-size', '10px');
+          $('#data-table-container table th').css('font-size', '10px');
           this.dataTable.on('draw', () => {
             this.outputData();
           });
