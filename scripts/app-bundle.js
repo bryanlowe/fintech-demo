@@ -540,7 +540,7 @@ define('pages/home/components/index',["require", "exports", "aurelia-fetch-clien
             data['datasets'] = [];
             if (this.pageState.graph_type === 'line') {
                 this.graphData.type = 'line';
-                this.graphData.options = { responsive: true };
+                this.graphData.options = { responsive: true, scales: { xAxes: [{ ticks: { autoSkip: false } }] } };
                 for (var i_1 = 0, ii_1 = chart.data.length; i_1 < ii_1; i_1++) {
                     var dataset = {};
                     dataset['fill'] = false;
@@ -558,7 +558,7 @@ define('pages/home/components/index',["require", "exports", "aurelia-fetch-clien
             }
             else if (this.pageState.graph_type === 'bar') {
                 this.graphData.type = 'bar';
-                this.graphData.options = { responsive: true, scales: { yAxes: [{ ticks: { beginAtZero: true } }] } };
+                this.graphData.options = { responsive: true, scales: { yAxes: [{ ticks: { beginAtZero: true } }], xAxes: [{ ticks: { autoSkip: false } }] } };
                 for (var i_2 = 0, ii_2 = chart.data.length; i_2 < ii_2; i_2++) {
                     var dataset = {};
                     dataset['label'] = chart.labels[i_2];

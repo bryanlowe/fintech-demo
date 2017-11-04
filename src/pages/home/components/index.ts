@@ -399,7 +399,7 @@ export class HomeLanding {
 		data['datasets'] = [];
 		if(this.pageState.graph_type === 'line'){
 			this.graphData.type = 'line';
-			this.graphData.options = {responsive: true};
+			this.graphData.options = {responsive: true, scales: {xAxes: [{ticks: {autoSkip: false}}]}};
 
 			// Create the graph data
 			for(let i = 0, ii = chart.data.length; i < ii; i++){
@@ -418,7 +418,7 @@ export class HomeLanding {
 			}
 		} else if(this.pageState.graph_type === 'bar'){
 			this.graphData.type = 'bar';
-			this.graphData.options = {responsive: true, scales: {yAxes: [{ticks: {beginAtZero: true}}]}};
+			this.graphData.options = {responsive: true, scales: {yAxes: [{ticks: {beginAtZero: true}}], xAxes: [{ticks: {autoSkip: false}}]}};
 
 			// Create the graph data
 			for(let i = 0, ii = chart.data.length; i < ii; i++){
