@@ -21,7 +21,7 @@
                             </div>
                         </div>
                         
-                        <div id="market_view_chart">
+                        <div id="market_view_chart" show.bind="pageState.model !== 'ranking'">
                             <div class="x_panel">
                                 <div class="x_content">
                                     <data-graph graph-data.bind="graphData"></data-graph>
