@@ -251,6 +251,7 @@ define('pages/home/components/index',["require", "exports", "aurelia-fetch-clien
             this.graphData = { type: '', data: { labels: [], datasets: [] }, options: {} };
             this.tableInput = { json: '', fields: [], rowLabels: [], columnLabels: [], summaries: [] };
             this.compareOptions = [];
+            this.timePeriod = { week_start: new Set(), week_end: new Set(), month_start: new Set(), month_end: new Set(), year_start: new Set(), year_end: new Set(), period_start: '', period_end: '' };
             this.compareList = [];
             this.dataTypes = [];
             this.filterList = [];
@@ -317,12 +318,20 @@ define('pages/home/components/index',["require", "exports", "aurelia-fetch-clien
             var totals = this.getTotals();
             var tempArray = this.model.map(function (obj) {
                 var result = obj.dataset;
-                if (!_this.compareOptions.length) {
-                    for (var i = 0, ii = result.length; i < ii; i++) {
-                        if (_this.compareOptions.indexOf(result[i].brand) === -1)
-                            _this.compareOptions.push(result[i].brand);
-                    }
+                for (var i = 0, ii = result.length; i < ii; i++) {
+                    if (_this.compareOptions.indexOf(result[i].brand) === -1)
+                        _this.compareOptions.push(result[i].brand);
+                    _this.timePeriod.week_start.add(result[i].time_period.week_start);
+                    _this.timePeriod.week_end.add(result[i].time_period.week_end);
+                    _this.timePeriod.month_start.add(result[i].time_period.month_start);
+                    _this.timePeriod.month_end.add(result[i].time_period.month_end);
+                    _this.timePeriod.year_start.add(result[i].time_period.year_start);
+                    _this.timePeriod.year_end.add(result[i].time_period.year_end);
                 }
+                if (!_this.timePeriod.period_start)
+                    _this.timePeriod.period_start = result[0].time_period.week_start;
+                if (!_this.timePeriod.period_end)
+                    _this.timePeriod.period_end = result[0].time_period.week_end;
                 return result;
             });
             tempArray = [].concat.apply([], tempArray);
@@ -502,6 +511,12 @@ define('pages/home/components/index',["require", "exports", "aurelia-fetch-clien
         };
         HomeLanding.prototype.rankingPivot = function (data) {
             var _this = this;
+            data = data.filter(function (obj) {
+                var date = _this.pageState.time_frame;
+                if ((new Date(obj.time_period[date + '_start'])) >= (new Date(_this.timePeriod.period_start)) && (new Date(obj.time_period[date + '_end'])) <= (new Date(_this.timePeriod.period_end))) {
+                    return obj;
+                }
+            });
             data = data.map(function (obj, index, arr) {
                 var result = [];
                 result[result.length] = _this.filterByCompareList(obj.brand, 'Industry');
@@ -610,6 +625,10 @@ define('pages/home/components/index',["require", "exports", "aurelia-fetch-clien
                 .subscribe(function (newValue, oldValue) { return _this.updateDataTableAndChart(); }));
             this.observers.push(this.bindingEngine.propertyObserver(this.pageState, 'time_frame')
                 .subscribe(function (newValue, oldValue) { return _this.updateDataTableAndChart(); }));
+            this.observers.push(this.bindingEngine.propertyObserver(this.pageState.time_frame, 'period_start')
+                .subscribe(function (newValue, oldValue) { return _this.updateDataTableAndChart(); }));
+            this.observers.push(this.bindingEngine.propertyObserver(this.pageState.time_frame, 'period_end')
+                .subscribe(function (newValue, oldValue) { return _this.updateDataTableAndChart(); }));
             this.observers.push(this.bindingEngine.propertyObserver(this, 'compareList')
                 .subscribe(function (newValue, oldValue) { return _this.updateDataTableAndChart(); }));
             this.observers.push(this.bindingEngine.propertyObserver(this, 'excludeIndustry')
@@ -632,7 +651,10 @@ define('pages/home/components/index',["require", "exports", "aurelia-fetch-clien
         };
         HomeLanding.prototype.attached = function () {
             this.setObservers();
-            this.fetchModelData();
+            this.fetchModelData()
+                .then(function () {
+                $('#weekTimeFrame').click();
+            });
         };
         HomeLanding.prototype.detached = function () {
             for (var i = 0, ii = this.observers.length; i < ii; i++) {
@@ -663,6 +685,10 @@ define('pages/home/components/index',["require", "exports", "aurelia-fetch-clien
             aurelia_framework_1.bindable,
             __metadata("design:type", Array)
         ], HomeLanding.prototype, "compareOptions", void 0);
+        __decorate([
+            aurelia_framework_1.bindable({ defaultBindingMode: aurelia_framework_1.bindingMode.twoWay }),
+            __metadata("design:type", Object)
+        ], HomeLanding.prototype, "timePeriod", void 0);
         __decorate([
             aurelia_framework_1.bindable({ defaultBindingMode: aurelia_framework_1.bindingMode.twoWay }),
             __metadata("design:type", Array)
@@ -754,6 +780,8 @@ define('resources/elements/market-view/data-control-element',["require", "export
             this.taskQueue = taskQueue;
             this.excludeIndustry = false;
             this.displayAllRows = false;
+            this.periodStartList = [];
+            this.periodEndList = [];
             this.observers = [];
             this.mutationObservers = [];
         }
@@ -766,8 +794,10 @@ define('resources/elements/market-view/data-control-element',["require", "export
             });
             $('input[type="radio"][name="time_frame"]').change(function (event) {
                 var _jqThis = event.currentTarget;
-                if ($(_jqThis).is(':checked'))
+                if ($(_jqThis).is(':checked')) {
                     _this.pageState.time_frame = $(_jqThis).val();
+                    _this.updateTimePeriods();
+                }
             });
             $('input[type="radio"][name="display_option"]').change(function (event) {
                 var _jqThis = event.currentTarget;
@@ -784,6 +814,7 @@ define('resources/elements/market-view/data-control-element',["require", "export
                 _this.excludeIndustry = $(_jqThis).is(':checked') ? false : true;
             });
             this.initDataTypes();
+            this.initPeriodLists();
             $('.keep-open').on({
                 "shown.bs.dropdown": function (event) { $(event.currentTarget).attr('closable', false); },
                 "click": function () { },
@@ -823,6 +854,28 @@ define('resources/elements/market-view/data-control-element',["require", "export
             if (this.pageState.model === 'ranking')
                 $('input[type="checkbox"][name="filter_item"]:first').click();
         };
+        DataControlElement.prototype.updateTimePeriods = function () {
+            var date = this.pageState.time_frame ? this.pageState.time_frame : 'week';
+            this.periodStartList = Array.from(this.timePeriod[date + '_start']);
+            this.periodEndList = Array.from(this.timePeriod[date + '_end']);
+        };
+        DataControlElement.prototype.initPeriodLists = function () {
+            var _this = this;
+            $('input[type="radio"][name="period_start"]').unbind('change');
+            $('input[type="radio"][name="period_start"]').change(function (event) {
+                var _jqThis = event.currentTarget;
+                if ($(_jqThis).is(':checked'))
+                    _this.timePeriod.period_start = $(_jqThis).val();
+                console.log({ start: _this.timePeriod.period_start });
+            });
+            $('input[type="radio"][name="period_end"]').unbind('change');
+            $('input[type="radio"][name="period_end"]').change(function (event) {
+                var _jqThis = event.currentTarget;
+                if ($(_jqThis).is(':checked'))
+                    _this.timePeriod.period_end = $(_jqThis).val();
+                console.log({ end: _this.timePeriod.period_end });
+            });
+        };
         DataControlElement.prototype.attached = function () {
             var _this = this;
             this.initialize();
@@ -838,10 +891,22 @@ define('resources/elements/market-view/data-control-element',["require", "export
                 _this.initFilterOptions();
             });
             this.mutationObservers.push(filterlistObserver.observe($('#filterList')[0], { childList: true, subtree: true, characterData: true }));
+            var periodStartListObserver = aurelia_pal_1.DOM.createMutationObserver(function () {
+                _this.initDataTypes();
+            });
+            this.mutationObservers.push(periodStartListObserver.observe($('#periodStartList')[0], { childList: true, subtree: true, characterData: true }));
+            var periodEndListObserver = aurelia_pal_1.DOM.createMutationObserver(function () {
+                _this.initDataTypes();
+            });
+            this.mutationObservers.push(periodEndListObserver.observe($('#periodEndList')[0], { childList: true, subtree: true, characterData: true }));
             this.observers.push(this.bindingEngine.propertyObserver(this, 'dataTypes')
                 .subscribe(function (newValue, oldValue) { return _this.initDataTypes(); }));
             this.observers.push(this.bindingEngine.propertyObserver(this, 'filterList')
                 .subscribe(function (newValue, oldValue) { return _this.initFilterOptions(); }));
+            this.observers.push(this.bindingEngine.propertyObserver(this, 'periodStartList')
+                .subscribe(function (newValue, oldValue) { return _this.initPeriodLists(); }));
+            this.observers.push(this.bindingEngine.propertyObserver(this, 'periodEndList')
+                .subscribe(function (newValue, oldValue) { return _this.initPeriodLists(); }));
         };
         DataControlElement.prototype.detached = function () {
             for (var i = 0, ii = this.mutationObservers.length; i < ii; i++) {
@@ -879,6 +944,18 @@ define('resources/elements/market-view/data-control-element',["require", "export
             aurelia_framework_2.bindable({ defaultBindingMode: aurelia_framework_2.bindingMode.twoWay }),
             __metadata("design:type", Boolean)
         ], DataControlElement.prototype, "displayAllRows", void 0);
+        __decorate([
+            aurelia_framework_2.bindable({ defaultBindingMode: aurelia_framework_2.bindingMode.twoWay }),
+            __metadata("design:type", Object)
+        ], DataControlElement.prototype, "timePeriod", void 0);
+        __decorate([
+            aurelia_framework_2.bindable,
+            __metadata("design:type", Array)
+        ], DataControlElement.prototype, "periodStartList", void 0);
+        __decorate([
+            aurelia_framework_2.bindable,
+            __metadata("design:type", Array)
+        ], DataControlElement.prototype, "periodEndList", void 0);
         DataControlElement = __decorate([
             aurelia_framework_1.customElement('data-control'),
             aurelia_framework_2.useView('./data-control-element.html'),
@@ -1571,9 +1648,9 @@ define('text!less/freelancer.css', ['module'], function(module) { module.exports
 define('text!less/mixins.css', ['module'], function(module) { module.exports = ""; });
 define('text!less/variables.css', ['module'], function(module) { module.exports = ""; });
 define('text!pages/page-elements/topbar-menu.html', ['module'], function(module) { module.exports = "<template>\r\n  <!-- top navigation -->\r\n        <div class=\"top_nav\">\r\n            <div class=\"nav_menu\">\r\n                <nav style=\"height: 23px;\">\r\n                </nav>\r\n            </div>\r\n            </div>\r\n            <!-- /top navigation -->        \r\n</template>"; });
-define('text!pages/home/components/index.html', ['module'], function(module) { module.exports = "<template>\r\n    <!-- sidebar menu -->\r\n    <compose router.bind=\"router\" view-model=\"pages/page-elements/sidebar-menu\"></compose>\r\n    <!-- /sidebar menu -->\r\n\r\n    <!-- top navigation -->\r\n    <compose view-model=\"pages/page-elements/topbar-menu\"></compose>\r\n    <!-- /top navigation -->\r\n\r\n    <div class=\"right_col\" role=\"main\">\r\n        <!-- market view panel -->\r\n        <div id=\"market_view\" class=\"row\">\r\n            <div class=\"col-md-12 col-sm-12 col-xs-12\">\r\n                <div class=\"x_panel\">\r\n                    <div class=\"x_content\">\r\n                        <div id=\"market_view_controls\">\r\n                            <div class=\"x_panel\">\r\n                                <div class=\"x_content\">\r\n                                    <data-control page-state.bind=\"pageState\" compare-list.bind=\"compareList\" compare-options.bind=\"compareOptions\" exclude-industry.bind=\"excludeIndustry\" data-types.bind=\"dataTypes\" filter-list.bind=\"filterList\" display-all-rows.bind=\"displayAllRows\" num-active-filters.bind=\"numActiveFilters\"></data-control>\r\n                                </div>\r\n                            </div>\r\n                        </div>\r\n                        \r\n                        <div id=\"market_view_chart\" show.bind=\"pageState.model !== 'ranking'\">\r\n                            <div class=\"x_panel\">\r\n                                <div class=\"x_content\">\r\n                                    <data-graph graph-data.bind=\"graphData\"></data-graph>\r\n                                </div>\r\n                            </div>\r\n                        </div>\r\n\r\n                        <div id=\"market_view_table\">\r\n                            <div class=\"x_panel\">\r\n                                <div class=\"x_content\">\r\n                                    <data-table table-input.bind=\"tableInput\" table-output.bind=\"tableOutput\" display-all-rows.bind=\"displayAllRows\"></data-table>\r\n                                </div>\r\n                            </div>\r\n                        </div>\r\n                    </div>\r\n                </div>\r\n            </div>\r\n        </div> \r\n    </div>\r\n</template>"; });
+define('text!pages/home/components/index.html', ['module'], function(module) { module.exports = "<template>\r\n    <!-- sidebar menu -->\r\n    <compose router.bind=\"router\" view-model=\"pages/page-elements/sidebar-menu\"></compose>\r\n    <!-- /sidebar menu -->\r\n\r\n    <!-- top navigation -->\r\n    <compose view-model=\"pages/page-elements/topbar-menu\"></compose>\r\n    <!-- /top navigation -->\r\n\r\n    <div class=\"right_col\" role=\"main\">\r\n        <!-- market view panel -->\r\n        <div id=\"market_view\" class=\"row\">\r\n            <div class=\"col-md-12 col-sm-12 col-xs-12\">\r\n                <div class=\"x_panel\">\r\n                    <div class=\"x_content\">\r\n                        <div id=\"market_view_controls\">\r\n                            <div class=\"x_panel\">\r\n                                <div class=\"x_content\">\r\n                                    <data-control page-state.bind=\"pageState\" compare-list.bind=\"compareList\" compare-options.bind=\"compareOptions\" exclude-industry.bind=\"excludeIndustry\" data-types.bind=\"dataTypes\" filter-list.bind=\"filterList\" display-all-rows.bind=\"displayAllRows\" num-active-filters.bind=\"numActiveFilters\" time-period.bind=\"timePeriod\"></data-control>\r\n                                </div>\r\n                            </div>\r\n                        </div>\r\n                        \r\n                        <div id=\"market_view_chart\" show.bind=\"pageState.model !== 'ranking'\">\r\n                            <div class=\"x_panel\">\r\n                                <div class=\"x_content\">\r\n                                    <data-graph graph-data.bind=\"graphData\"></data-graph>\r\n                                </div>\r\n                            </div>\r\n                        </div>\r\n\r\n                        <div id=\"market_view_table\">\r\n                            <div class=\"x_panel\">\r\n                                <div class=\"x_content\">\r\n                                    <data-table table-input.bind=\"tableInput\" table-output.bind=\"tableOutput\" display-all-rows.bind=\"displayAllRows\"></data-table>\r\n                                </div>\r\n                            </div>\r\n                        </div>\r\n                    </div>\r\n                </div>\r\n            </div>\r\n        </div> \r\n    </div>\r\n</template>"; });
 define('text!resources/elements/common/load-spinner-element.html', ['module'], function(module) { module.exports = "<template>\r\n\t<require from=\"pure-css-loader/css-loader.css\"></require>\r\n\t<div id=\"load-spinner\" style=\"display: none;\">\r\n\t\t<div class=\"loader loader-default is-active\"></div>\r\n\t</div>\r\n</template>"; });
-define('text!resources/elements/market-view/data-control-element.html', ['module'], function(module) { module.exports = "<template>\r\n\t<div id=\"control-container\" class=\"row center-block\">\r\n\t\t<div class=\"pull-left\" style=\"margin-right: 15px;\">\r\n\t\t\t\r\n\t\t</div>\r\n\r\n\t\t<div class=\"pull-left\" style=\"margin-right: 15px;\">\r\n\t\t\t<div class=\"btn-group\">\r\n              \t<button type=\"button\" class=\"btn btn-dark\">Data Sets</button>\r\n              \t<button type=\"button\" class=\"btn btn-dark dropdown-toggle\" data-toggle=\"dropdown\" aria-expanded=\"false\">\r\n                \t<span class=\"caret\"></span>\r\n                \t<span class=\"sr-only\">Toggle Dropdown</span>\r\n              \t</button>\r\n              \t<div class=\"btn-group-vertical dropdown-menu\" data-toggle=\"buttons\" role=\"menu\">\r\n\t                <label class=\"btn btn-dark active\">\r\n\t\t\t         \t<input type=\"radio\" name=\"data_set\" value=\"brandshare\" id=\"brandshareModel\"> Dataset 1\r\n\t\t\t        </label>\r\n\t\t\t        <label class=\"btn btn-dark\">\r\n\t\t\t          \t<input type=\"radio\" name=\"data_set\" value=\"salesgrowth\" id=\"salesgrowthModel\"> Dataset 2\r\n\t\t\t        </label>\r\n\t\t\t        <label class=\"btn btn-dark\">\r\n\t\t\t          \t<input type=\"radio\" name=\"data_set\" value=\"pricing\" id=\"pricingModel\"> Dataset 3\r\n\t\t\t        </label>\r\n\t\t\t        <label class=\"btn btn-dark\">\r\n\t\t\t          \t<input type=\"radio\" name=\"data_set\" value=\"ranking\" id=\"rankingModel\"> Dataset 4\r\n\t\t\t        </label>\r\n\t            </div>\t\r\n            </div>\r\n\t\t</div>\r\n\r\n\t\t<div class=\"pull-left\" style=\"margin-right: 15px;\">\r\n\t\t\t<div class=\"btn-group\">\r\n              \t<button type=\"button\" class=\"btn btn-dark\">Data Model</button>\r\n              \t<button type=\"button\" class=\"btn btn-dark dropdown-toggle\" data-toggle=\"dropdown\" aria-expanded=\"false\">\r\n                \t<span class=\"caret\"></span>\r\n                \t<span class=\"sr-only\">Toggle Dropdown</span>\r\n              \t</button>\r\n              \t<div class=\"btn-group-vertical dropdown-menu\" data-toggle=\"buttons\" role=\"menu\">\r\n\t                <label class=\"btn btn-dark active\">\r\n\t\t\t         \t<input type=\"radio\" name=\"data_model\" value=\"brandshare\" id=\"brandshareModel\"> Brand Share\r\n\t\t\t        </label>\r\n\t\t\t        <label class=\"btn btn-dark\">\r\n\t\t\t          \t<input type=\"radio\" name=\"data_model\" value=\"salesgrowth\" id=\"salesgrowthModel\"> Sales Growth\r\n\t\t\t        </label>\r\n\t\t\t        <label class=\"btn btn-dark\">\r\n\t\t\t          \t<input type=\"radio\" name=\"data_model\" value=\"pricing\" id=\"pricingModel\"> Pricing\r\n\t\t\t        </label>\r\n\t\t\t        <label class=\"btn btn-dark\">\r\n\t\t\t          \t<input type=\"radio\" name=\"data_model\" value=\"ranking\" id=\"rankingModel\"> Ranking\r\n\t\t\t        </label>\r\n\t            </div>\t\r\n            </div>\r\n\t\t</div> \r\n\r\n\t\t<div class=\"pull-left\" style=\"margin-right: 15px;\">\r\n\t\t\t<div id=\"dataTypeList\" class=\"dropdown btn-group\">\r\n              \t<button type=\"button\" class=\"btn btn-dark\">Data Type</button>\r\n              \t<button type=\"button\" class=\"btn btn-dark dropdown-toggle\" data-toggle=\"dropdown\" aria-expanded=\"false\">\r\n                \t<span class=\"caret\"></span>\r\n                \t<span class=\"sr-only\">Toggle Dropdown</span>\r\n              \t</button>\r\n              \t<div class=\"btn-group-vertical dropdown-menu\" data-toggle=\"buttons\" role=\"menu\">\r\n              \t\t<label if.bind=\"pageState.model === 'ranking'\" class=\"btn btn-dark active\" repeat.for=\"type of dataTypes\">\r\n              \t\t\t<input type=\"checkbox\" name=\"data_type\" value=\"${type}\" checked> ${type}\r\n              \t\t</label>\r\n              \t\t<label if.bind=\"pageState.model !== 'ranking'\" class=\"btn btn-dark\" class.bind=\"$first ? 'active' : ''\" repeat.for=\"type of dataTypes\">\r\n              \t\t\t<input type=\"radio\" name=\"data_type\" value=\"${type}\"> ${type}\r\n              \t\t</label>\r\n\t            </div>\t\r\n            </div>\r\n\t\t</div>\r\n\r\n\t\t<div class=\"pull-left\" style=\"margin-right: 15px;\">\r\n\t\t\t<div id=\"filterList\" class=\"dropdown keep-open btn-group\">\r\n              \t<button type=\"button\" class=\"dLabel btn btn-dark\">Filter</button>\r\n              \t<button type=\"button\" class=\"dToggle btn btn-dark dropdown-toggle\" data-toggle=\"dropdown\" aria-expanded=\"false\">\r\n                \t<span class=\"caret\"></span>\r\n                \t<span class=\"sr-only\">Toggle Dropdown</span>\r\n              \t</button>\r\n              \t<div class=\"btn-group-vertical dropdown-menu\" data-toggle=\"buttons\" role=\"menu\">\r\n              \t\t<label class=\"btn btn-dark\" repeat.for=\"item of filterList\">\r\n              \t\t\t<input type=\"checkbox\" name=\"filter_item\" value=\"${item}\"> ${item}\r\n              \t\t</label>\r\n\t            </div>\t\r\n            </div>\r\n\t\t</div>\r\n\r\n\t\t<div if.bind=\"pageState.model !== 'ranking'\" class=\"pull-left\" style=\"margin-right: 15px;\">\r\n\t\t\t<div id=\"compareEntries\" class=\"dropdown keep-open btn-group\">\r\n              \t<button type=\"button\" class=\"dLabel btn btn-dark\">Compare</button>\r\n              \t<button type=\"button\" class=\"dToggle btn btn-dark dropdown-toggle\" data-toggle=\"dropdown\" aria-expanded=\"false\">\r\n                \t<span class=\"caret\"></span>\r\n                \t<span class=\"sr-only\">Toggle Dropdown</span>\r\n              \t</button>\r\n              \t<div class=\"btn-group-vertical dropdown-menu\" data-toggle=\"buttons\" role=\"menu\">\r\n              \t\t<label class=\"btn btn-dark active\">\r\n\t\t\t          \t<input type=\"checkbox\" name=\"industry\" checked> Industry\r\n\t\t\t        </label>\r\n              \t\t<label class=\"btn btn-dark\" repeat.for=\"item of compareOptions\">\r\n              \t\t\t<input type=\"checkbox\" name=\"compare_option\" value=\"${item}\"> ${item}\r\n              \t\t</label>\r\n\t            </div>\t\r\n            </div>\r\n\t\t</div> \r\n\r\n\t\t<div if.bind=\"pageState.model !== 'ranking'\" class=\"pull-left\" style=\"margin-right: 15px;\">\r\n\t\t\t<div class=\"btn-group\" data-toggle=\"buttons\">\r\n\t\t        <label class=\"btn btn-dark active\">\r\n\t\t          \t<input type=\"radio\" name=\"graph_type\" value=\"line\" id=\"lineGraphType\"> Line\r\n\t\t        </label>\r\n\t\t        <label class=\"btn btn-dark\">\r\n\t\t          \t<input type=\"radio\" name=\"graph_type\" value=\"bar\" id=\"barGraphType\"> Bar\r\n\t\t        </label>\r\n\t\t        <label class=\"btn btn-dark\">\r\n\t\t          \t<input type=\"radio\" name=\"graph_type\" value=\"pie\" id=\"pieGraphType\"> Pie\r\n\t\t        </label>\r\n\t\t    </div>\r\n\t\t</div>\r\n\r\n\t\t<div class=\"pull-left\" style=\"margin-right: 15px;\">\r\n\t\t\t<div class=\"btn-group\" data-toggle=\"buttons\">\r\n\t\t        <label class=\"btn btn-dark active\">\r\n\t\t         \t<input type=\"radio\" name=\"time_frame\" value=\"week\" id=\"weekTimeFrame\"> Week\r\n\t\t        </label>\r\n\t\t        <label class=\"btn btn-dark\">\r\n\t\t          \t<input type=\"radio\" name=\"time_frame\" value=\"month\" id=\"monthTimeFrame\"> Month\r\n\t\t        </label>\r\n\t\t        <label class=\"btn btn-dark\">\r\n\t\t          \t<input type=\"radio\" name=\"time_frame\" value=\"year\" id=\"yearTimeFrame\"> Year\r\n\t\t        </label>\r\n\t\t    </div>\r\n\t\t</div>\r\n\t\t<div class=\"pull-left\" style=\"margin-right: 15px;\">\r\n\t\t\t<div class=\"btn-group\" data-toggle=\"buttons\">\r\n\t\t        <label class=\"btn btn-dark active\">\r\n\t\t         \t<input type=\"radio\" name=\"display_option\" value=\"current\" id=\"weekTimeFrame\"> Current Page\r\n\t\t        </label>\r\n\t\t        <label class=\"btn btn-dark\">\r\n\t\t          \t<input type=\"radio\" name=\"display_option\" value=\"all\" id=\"monthTimeFrame\"> All Pages\r\n\t\t        </label>\r\n\t\t    </div>\r\n\t\t</div>\r\n\t</div>\r\n</template>"; });
+define('text!resources/elements/market-view/data-control-element.html', ['module'], function(module) { module.exports = "<template>\r\n\t<div id=\"control-container\" class=\"row center-block\">\r\n\t\t<div class=\"pull-left\" style=\"margin-right: 15px;\">\r\n\t\t\t\r\n\t\t</div>\r\n\r\n\t\t<div class=\"pull-left\" style=\"margin-right: 15px;\">\r\n\t\t\t<div class=\"btn-group\">\r\n              \t<button type=\"button\" class=\"btn btn-dark\">Data Sets</button>\r\n              \t<button type=\"button\" class=\"btn btn-dark dropdown-toggle\" data-toggle=\"dropdown\" aria-expanded=\"false\">\r\n                \t<span class=\"caret\"></span>\r\n                \t<span class=\"sr-only\">Toggle Dropdown</span>\r\n              \t</button>\r\n              \t<div class=\"btn-group-vertical dropdown-menu\" data-toggle=\"buttons\" role=\"menu\">\r\n\t                <label class=\"btn btn-dark active\">\r\n\t\t\t         \t<input type=\"radio\" name=\"data_set\" value=\"brandshare\" id=\"brandshareModel\"> Dataset 1\r\n\t\t\t        </label>\r\n\t\t\t        <label class=\"btn btn-dark\">\r\n\t\t\t          \t<input type=\"radio\" name=\"data_set\" value=\"salesgrowth\" id=\"salesgrowthModel\"> Dataset 2\r\n\t\t\t        </label>\r\n\t\t\t        <label class=\"btn btn-dark\">\r\n\t\t\t          \t<input type=\"radio\" name=\"data_set\" value=\"pricing\" id=\"pricingModel\"> Dataset 3\r\n\t\t\t        </label>\r\n\t\t\t        <label class=\"btn btn-dark\">\r\n\t\t\t          \t<input type=\"radio\" name=\"data_set\" value=\"ranking\" id=\"rankingModel\"> Dataset 4\r\n\t\t\t        </label>\r\n\t            </div>\t\r\n            </div>\r\n\t\t</div>\r\n\r\n\t\t<div class=\"pull-left\" style=\"margin-right: 15px;\">\r\n\t\t\t<div class=\"btn-group\">\r\n              \t<button type=\"button\" class=\"btn btn-dark\">Data Model</button>\r\n              \t<button type=\"button\" class=\"btn btn-dark dropdown-toggle\" data-toggle=\"dropdown\" aria-expanded=\"false\">\r\n                \t<span class=\"caret\"></span>\r\n                \t<span class=\"sr-only\">Toggle Dropdown</span>\r\n              \t</button>\r\n              \t<div class=\"btn-group-vertical dropdown-menu\" data-toggle=\"buttons\" role=\"menu\">\r\n\t                <label class=\"btn btn-dark active\">\r\n\t\t\t         \t<input type=\"radio\" name=\"data_model\" value=\"brandshare\" id=\"brandshareModel\"> Brand Share\r\n\t\t\t        </label>\r\n\t\t\t        <label class=\"btn btn-dark\">\r\n\t\t\t          \t<input type=\"radio\" name=\"data_model\" value=\"salesgrowth\" id=\"salesgrowthModel\"> Sales Growth\r\n\t\t\t        </label>\r\n\t\t\t        <label class=\"btn btn-dark\">\r\n\t\t\t          \t<input type=\"radio\" name=\"data_model\" value=\"pricing\" id=\"pricingModel\"> Pricing\r\n\t\t\t        </label>\r\n\t\t\t        <label class=\"btn btn-dark\">\r\n\t\t\t          \t<input type=\"radio\" name=\"data_model\" value=\"ranking\" id=\"rankingModel\"> Ranking\r\n\t\t\t        </label>\r\n\t            </div>\t\r\n            </div>\r\n\t\t</div> \r\n\r\n\t\t<div class=\"pull-left\" style=\"margin-right: 15px;\">\r\n\t\t\t<div id=\"dataTypeList\" class=\"dropdown btn-group\">\r\n              \t<button type=\"button\" class=\"btn btn-dark\">Data Type</button>\r\n              \t<button type=\"button\" class=\"btn btn-dark dropdown-toggle\" data-toggle=\"dropdown\" aria-expanded=\"false\">\r\n                \t<span class=\"caret\"></span>\r\n                \t<span class=\"sr-only\">Toggle Dropdown</span>\r\n              \t</button>\r\n              \t<div class=\"btn-group-vertical dropdown-menu\" data-toggle=\"buttons\" role=\"menu\">\r\n              \t\t<label if.bind=\"pageState.model === 'ranking'\" class=\"btn btn-dark active\" repeat.for=\"type of dataTypes\">\r\n              \t\t\t<input type=\"checkbox\" name=\"data_type\" value=\"${type}\" checked> ${type}\r\n              \t\t</label>\r\n              \t\t<label if.bind=\"pageState.model !== 'ranking'\" class=\"btn btn-dark\" class.bind=\"$first ? 'active' : ''\" repeat.for=\"type of dataTypes\">\r\n              \t\t\t<input type=\"radio\" name=\"data_type\" value=\"${type}\"> ${type}\r\n              \t\t</label>\r\n\t            </div>\t\r\n            </div>\r\n\t\t</div>\r\n\r\n\t\t<div class=\"pull-left\" style=\"margin-right: 15px;\">\r\n\t\t\t<div id=\"filterList\" class=\"dropdown keep-open btn-group\">\r\n              \t<button type=\"button\" class=\"dLabel btn btn-dark\">Filter</button>\r\n              \t<button type=\"button\" class=\"dToggle btn btn-dark dropdown-toggle\" data-toggle=\"dropdown\" aria-expanded=\"false\">\r\n                \t<span class=\"caret\"></span>\r\n                \t<span class=\"sr-only\">Toggle Dropdown</span>\r\n              \t</button>\r\n              \t<div class=\"btn-group-vertical dropdown-menu\" data-toggle=\"buttons\" role=\"menu\">\r\n              \t\t<label class=\"btn btn-dark\" repeat.for=\"item of filterList\">\r\n              \t\t\t<input type=\"checkbox\" name=\"filter_item\" value=\"${item}\"> ${item}\r\n              \t\t</label>\r\n\t            </div>\t\r\n            </div>\r\n\t\t</div>\r\n\r\n\t\t<div show.bind=\"pageState.model !== 'ranking'\" class=\"pull-left\" style=\"margin-right: 15px;\">\r\n\t\t\t<div id=\"compareEntries\" class=\"dropdown keep-open btn-group\">\r\n              \t<button type=\"button\" class=\"dLabel btn btn-dark\">Compare</button>\r\n              \t<button type=\"button\" class=\"dToggle btn btn-dark dropdown-toggle\" data-toggle=\"dropdown\" aria-expanded=\"false\">\r\n                \t<span class=\"caret\"></span>\r\n                \t<span class=\"sr-only\">Toggle Dropdown</span>\r\n              \t</button>\r\n              \t<div class=\"btn-group-vertical dropdown-menu\" data-toggle=\"buttons\" role=\"menu\">\r\n              \t\t<label class=\"btn btn-dark active\">\r\n\t\t\t          \t<input type=\"checkbox\" name=\"industry\" checked> Industry\r\n\t\t\t        </label>\r\n              \t\t<label class=\"btn btn-dark\" repeat.for=\"item of compareOptions\">\r\n              \t\t\t<input type=\"checkbox\" name=\"compare_option\" value=\"${item}\"> ${item}\r\n              \t\t</label>\r\n\t            </div>\t\r\n            </div>\r\n\t\t</div> \r\n\r\n\t\t<div show.bind=\"pageState.model !== 'ranking'\" class=\"pull-left\" style=\"margin-right: 15px;\">\r\n\t\t\t<div class=\"btn-group\" data-toggle=\"buttons\">\r\n\t\t        <label class=\"btn btn-dark active\">\r\n\t\t          \t<input type=\"radio\" name=\"graph_type\" value=\"line\" id=\"lineGraphType\"> Line\r\n\t\t        </label>\r\n\t\t        <label class=\"btn btn-dark\">\r\n\t\t          \t<input type=\"radio\" name=\"graph_type\" value=\"bar\" id=\"barGraphType\"> Bar\r\n\t\t        </label>\r\n\t\t        <label class=\"btn btn-dark\">\r\n\t\t          \t<input type=\"radio\" name=\"graph_type\" value=\"pie\" id=\"pieGraphType\"> Pie\r\n\t\t        </label>\r\n\t\t    </div>\r\n\t\t</div>\r\n\r\n\t\t<div class=\"pull-left\" style=\"margin-right: 15px;\">\r\n\t\t\t<div id=\"time-period-buttons\">\r\n\t\t\t\t<div class=\"btn-group\" data-toggle=\"buttons\">\r\n\t\t\t        <label class=\"btn btn-dark active\">\r\n\t\t\t         \t<input type=\"radio\" name=\"time_frame\" value=\"week\" id=\"weekTimeFrame\"> Week\r\n\t\t\t        </label>\r\n\t\t\t        <label class=\"btn btn-dark\">\r\n\t\t\t          \t<input type=\"radio\" name=\"time_frame\" value=\"month\" id=\"monthTimeFrame\"> Month\r\n\t\t\t        </label>\r\n\t\t\t        <label class=\"btn btn-dark\">\r\n\t\t\t          \t<input type=\"radio\" name=\"time_frame\" value=\"year\" id=\"yearTimeFrame\"> Year\r\n\t\t\t        </label>\r\n\t\t\t    </div>\r\n\t\t\t</div>\r\n\t\t</div>\r\n\t\t<div show.bind=\"pageState.model === 'ranking'\" id=\"time-period-dropdowns\" class=\"pull-left\" style=\"margin-right: 15px;\">\r\n\t\t\t<div id=\"periodStartList\" show.bind=\"periodStartList.length\" class=\"btn-group\" style=\"margin-right: 15px;\">\r\n              \t<button type=\"button\" class=\"btn btn-dark\">Starting Period</button>\r\n              \t<button type=\"button\" class=\"btn btn-dark dropdown-toggle\" data-toggle=\"dropdown\" aria-expanded=\"false\">\r\n                \t<span class=\"caret\"></span>\r\n                \t<span class=\"sr-only\">Toggle Dropdown</span>\r\n              \t</button>\r\n              \t<div class=\"btn-group-vertical dropdown-menu\" data-toggle=\"buttons\" role=\"menu\" style=\"max-height: 200px; overflow-y: auto;\">\r\n\t                <label class=\"btn btn-dark\" repeat.for=\"date of periodStartList\">\r\n              \t\t\t<input type=\"radio\" name=\"period_start\" value=\"${date}\"> ${date}\r\n              \t\t</label>\r\n\t            </div>\t\r\n            </div>\r\n            <div id=\"periodEndList\" show.bind=\"periodEndList.length\" class=\"btn-group\">\r\n              \t<button type=\"button\" class=\"btn btn-dark\">Ending Period</button>\r\n              \t<button type=\"button\" class=\"btn btn-dark dropdown-toggle\" data-toggle=\"dropdown\" aria-expanded=\"false\">\r\n                \t<span class=\"caret\"></span>\r\n                \t<span class=\"sr-only\">Toggle Dropdown</span>\r\n              \t</button>\r\n              \t<div class=\"btn-group-vertical dropdown-menu\" data-toggle=\"buttons\" role=\"menu\" style=\"max-height: 200px; overflow-y: auto;\">\r\n\t                <label class=\"btn btn-dark\" repeat.for=\"date of periodEndList\">\r\n              \t\t\t<input type=\"radio\" name=\"period_end\" value=\"${date}\"> ${date}\r\n              \t\t</label>\r\n\t            </div>\t\r\n            </div>\r\n\t\t</div>\r\n\t\t<div class=\"pull-left\" style=\"margin-right: 15px;\">\r\n\t\t\t<div class=\"btn-group\" data-toggle=\"buttons\">\r\n\t\t        <label class=\"btn btn-dark active\">\r\n\t\t         \t<input type=\"radio\" name=\"display_option\" value=\"current\"> Current Page\r\n\t\t        </label>\r\n\t\t        <label class=\"btn btn-dark\">\r\n\t\t          \t<input type=\"radio\" name=\"display_option\" value=\"all\"> All Pages\r\n\t\t        </label>\r\n\t\t    </div>\r\n\t\t</div>\r\n\t</div>\r\n</template>"; });
 define('text!resources/elements/market-view/data-graph-element.html', ['module'], function(module) { module.exports = "<template>\r\n\t<div id=\"graph-container\">\r\n\t\t<canvas id=\"chartjsGraph\"></canvas>\r\n\t</div>\r\n</template>"; });
 define('text!resources/elements/market-view/data-table-element.html', ['module'], function(module) { module.exports = "<template>\r\n\t<require from=\"datatables.net-bs/css/dataTables.bootstrap.css\"></require>\r\n\t<div id=\"data-menu-container\" class=\"hidden\"></div>\r\n\t<div id=\"data-table-container\">\r\n\t\t<div id=\"results\" style=\"overflow-x: auto;\">\r\n\t\t\t<table id=\"datatable-responsive\" class=\"table table-striped table-bordered dt-responsive nowrap\" cellspacing=\"0\" width=\"100%\"></table>\r\n\t\t</div>\r\n\t</div>\r\n</template>"; });
 define('text!resources/elements/market-view/import-element.html', ['module'], function(module) { module.exports = "<div class=\"btn-group\" data-toggle=\"buttons\">\r\n    <label class=\"btn btn-dark\">\r\n      \t<input type=\"radio\" name=\"import_btn\" value=\"line\" id=\"lineGraphType\"> Import\r\n    </label>\r\n</div>"; });

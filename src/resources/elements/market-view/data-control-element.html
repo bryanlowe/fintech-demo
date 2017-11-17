@@ -85,7 +85,7 @@
             </div>
 		</div>
 
-		<div if.bind="pageState.model !== 'ranking'" class="pull-left" style="margin-right: 15px;">
+		<div show.bind="pageState.model !== 'ranking'" class="pull-left" style="margin-right: 15px;">
 			<div id="compareEntries" class="dropdown keep-open btn-group">
               	<button type="button" class="dLabel btn btn-dark">Compare</button>
               	<button type="button" class="dToggle btn btn-dark dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
@@ -103,7 +103,7 @@
             </div>
 		</div> 
 
-		<div if.bind="pageState.model !== 'ranking'" class="pull-left" style="margin-right: 15px;">
+		<div show.bind="pageState.model !== 'ranking'" class="pull-left" style="margin-right: 15px;">
 			<div class="btn-group" data-toggle="buttons">
 		        <label class="btn btn-dark active">
 		          	<input type="radio" name="graph_type" value="line" id="lineGraphType"> Line
@@ -118,25 +118,53 @@
 		</div>
 
 		<div class="pull-left" style="margin-right: 15px;">
-			<div class="btn-group" data-toggle="buttons">
-		        <label class="btn btn-dark active">
-		         	<input type="radio" name="time_frame" value="week" id="weekTimeFrame"> Week
-		        </label>
-		        <label class="btn btn-dark">
-		          	<input type="radio" name="time_frame" value="month" id="monthTimeFrame"> Month
-		        </label>
-		        <label class="btn btn-dark">
-		          	<input type="radio" name="time_frame" value="year" id="yearTimeFrame"> Year
-		        </label>
-		    </div>
+			<div id="time-period-buttons">
+				<div class="btn-group" data-toggle="buttons">
+			        <label class="btn btn-dark active">
+			         	<input type="radio" name="time_frame" value="week" id="weekTimeFrame"> Week
+			        </label>
+			        <label class="btn btn-dark">
+			          	<input type="radio" name="time_frame" value="month" id="monthTimeFrame"> Month
+			        </label>
+			        <label class="btn btn-dark">
+			          	<input type="radio" name="time_frame" value="year" id="yearTimeFrame"> Year
+			        </label>
+			    </div>
+			</div>
+		</div>
+		<div show.bind="pageState.model === 'ranking'" id="time-period-dropdowns" class="pull-left" style="margin-right: 15px;">
+			<div id="periodStartList" show.bind="periodStartList.length" class="btn-group" style="margin-right: 15px;">
+              	<button type="button" class="btn btn-dark">Starting Period</button>
+              	<button type="button" class="btn btn-dark dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
+                	<span class="caret"></span>
+                	<span class="sr-only">Toggle Dropdown</span>
+              	</button>
+              	<div class="btn-group-vertical dropdown-menu" data-toggle="buttons" role="menu" style="max-height: 200px; overflow-y: auto;">
+	                <label class="btn btn-dark" repeat.for="date of periodStartList">
+              			<input type="radio" name="period_start" value="${date}"> ${date}
+              		</label>
+	            </div>	
+            </div>
+            <div id="periodEndList" show.bind="periodEndList.length" class="btn-group">
+              	<button type="button" class="btn btn-dark">Ending Period</button>
+              	<button type="button" class="btn btn-dark dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
+                	<span class="caret"></span>
+                	<span class="sr-only">Toggle Dropdown</span>
+              	</button>
+              	<div class="btn-group-vertical dropdown-menu" data-toggle="buttons" role="menu" style="max-height: 200px; overflow-y: auto;">
+	                <label class="btn btn-dark" repeat.for="date of periodEndList">
+              			<input type="radio" name="period_end" value="${date}"> ${date}
+              		</label>
+	            </div>	
+            </div>
 		</div>
 		<div class="pull-left" style="margin-right: 15px;">
 			<div class="btn-group" data-toggle="buttons">
 		        <label class="btn btn-dark active">
-		         	<input type="radio" name="display_option" value="current" id="weekTimeFrame"> Current Page
+		         	<input type="radio" name="display_option" value="current"> Current Page
 		        </label>
 		        <label class="btn btn-dark">
-		          	<input type="radio" name="display_option" value="all" id="monthTimeFrame"> All Pages
+		          	<input type="radio" name="display_option" value="all"> All Pages
 		        </label>
 		    </div>
 		</div>

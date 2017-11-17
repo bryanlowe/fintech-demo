@@ -1,7 +1,7 @@
 var mongoose = require('mongoose');
 var model = mongoose.model('MarketView');
 
-model.schema.methods.createAggregate = function(time_frame){
+model.schema.methods.createAggregate = function(){
 	var result = [
 		{
 			'$unwind': '$sale_statement'
@@ -13,6 +13,11 @@ model.schema.methods.createAggregate = function(time_frame){
         'sale_statement.units': 1,
         'sale_statement.revenue': 1,
         'sale_statement.time_frame.week_start': 1,
+        'sale_statement.time_frame.week_end': 1,
+        'sale_statement.time_frame.month_start': 1,
+        'sale_statement.time_frame.month_end': 1,
+        'sale_statement.time_frame.year_start': 1,
+        'sale_statement.time_frame.year_end': 1,
         'sale_statement.time_frame.iso_date': 1,
         'product': 1
       }
@@ -21,7 +26,14 @@ model.schema.methods.createAggregate = function(time_frame){
       '$group': {
         '_id': {
           'brand': '$brand', 
-          'time_frame': '$sale_statement.time_frame.week_start',
+          'time_period': {
+            'week_start': '$sale_statement.time_frame.week_start',
+            'week_end': '$sale_statement.time_frame.week_end',
+            'month_start': '$sale_statement.time_frame.month_start',
+            'month_end': '$sale_statement.time_frame.month_end',
+            'year_start': '$sale_statement.time_frame.year_start',
+            'year_end': '$sale_statement.time_frame.year_end'
+          },
           'product': '$product',
         }, 
         'units': {
@@ -44,7 +56,7 @@ model.schema.methods.createAggregate = function(time_frame){
       '$project': {
         'doc': {
           'brand': '$_id.brand',
-          'time_frame': '$_id.time_frame',
+          'time_period': '$_id.time_period',
           'product': '$_id.product',
           'units': '$units',
           'revenue': '$revenue',
@@ -75,115 +87,9 @@ model.schema.methods.createAggregate = function(time_frame){
 	return result;
 }
 
-// create table data function
-model.schema.methods.createDataTable = function(model_data){
-  let table_data = {dataArray: [], rows: ['Brand'], columns: ['Date'], aggregationDimension: 'Revenue', aggregator: 'sum', rowHeader: 'Brand'};
-
-  // Create the table input
-  let tempArray = model_data.map(function(obj){
-    return obj.dataset;
-  });
-  tempArray = [].concat.apply([], tempArray);
-  table_data.dataArray = tempArray.map(function(obj){
-    let result = {};
-    result['Brand'] = obj.brand;
-    result['Date'] = obj.time_frame;
-    result['Units'] = obj.units;
-    result['Revenue'] = obj.revenue;
-    for(let i = 0, ii = obj.product.length; i < ii; i++){
-      result[obj.product[i].spec_type] = obj.product[i].spec_value;
-    }
-    return result;
-  });
-  
-  table_data.options = {
-    rows: ['Brand'],
-    cols: ['Date'],
-    vals: ['Units']
-  };
-  return table_data;
-}
-
-// creates line graph data
-model.schema.methods.createLineGraphData = function(table_data){
-  var graph_data = {data: {labels: [], datasets: []}, options: {responsive: true}};
-
-  // Create the graph labels
-  graph_data.data.labels = table_data.header;
-
-  // add colors
-  var colors = palette('tol-rainbow', table_data.rows.length).map(function(hex) {
-    return '#' + hex;
-  });
-
-  // Create the graph data
-  for(var i = 0, ii = table_data.rows.length; i < ii; i++){
-    var dataset = {};
-    dataset['fill'] = false;
-    dataset['label'] = table_data.rows[i][0];
-    dataset['data'] = table_data.rows[i].slice(1, table_data.rows[i].length).map(function(value){
-      return Number(value.replace('$', '').replace('%', '').replace(/,/g, ''));
-    });
-    dataset['backgroundColor'] = colors[i];
-    dataset['borderColor'] = colors[i];
-    graph_data.data.datasets.push(dataset);
-  }
-  return graph_data;
-}
-
-// creates bar graph data
-model.schema.methods.createBarGraphData = function(table_data){
-  var graph_data = {data: {labels: [], datasets: []}, options: {responsive: true, scales: {yAxes: [{ticks: {beginAtZero: true}}]}}};
-
-  // Create the graph labels
-  graph_data.data.labels = table_data.header;
-
-  // add colors
-  var colors = palette('tol-rainbow', table_data.rows.length).map(function(hex) {
-    return '#' + hex;
-  });
-
-  // Create the graph data
-  for(var i = 0, ii = table_data.rows.length; i < ii; i++){
-    var dataset = {};
-    dataset['label'] = table_data.rows[i][0];
-    dataset['data'] = table_data.rows[i].slice(1, table_data.rows[i].length).map(function(value){
-      return Number(value.replace('$', '').replace('%', '').replace(/,/g, ''));
-    });
-    dataset['backgroundColor'] = colors[i];
-    graph_data.data.datasets.push(dataset);
-  }
-  return graph_data;
-}
-
-// creates pie graph data
-model.schema.methods.createPieGraphData = function(table_data){
-  var graph_data = {data: {labels: [], datasets: [{data: [], backgroundColor: []}]}, options: {responsive: true, legend: false}};
-
-  // add colors
-  var colors = palette('tol-rainbow', table_data.rows.length).map(function(hex) {
-    return '#' + hex;
-  });
-  graph_data.data.datasets[0].backgroundColor = colors;
-
-  // Create the graph data
-  var totals = [];
-  for(var i = 0, ii = table_data.rows.length; i < ii; i++){
-    var dataset = {};
-    // Create the graph labels
-    graph_data.data.labels.push(table_data.rows[i][0]);
-    var temp_row = table_data.rows[i].slice(1, table_data.rows[i].length).map(function(value){
-      return Number(value.replace('$', '').replace('%', '').replace(/,/g, ''));
-    });
-    totals.push(temp_row.reduce(function(a, b) { return a + b; }, 0))
-  }
-  graph_data.data.datasets[0].data = totals;
-  return graph_data;
-}
-
 // Aggregates model data
 exports.getModelData = (req, res) => {
-    model.aggregate(model.schema.methods.createAggregate(req.params.time_frame)).exec((error, data) => {
+    model.aggregate(model.schema.methods.createAggregate()).exec((error, data) => {
         if (error) {
             res.send({result:'ERROR', message: error});
         } else {

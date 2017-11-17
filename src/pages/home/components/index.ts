@@ -15,6 +15,7 @@ export class HomeLanding {
 	@bindable tableInput: any = {json: '', fields: [], rowLabels:[], columnLabels: [], summaries:[]}; 
 	@bindable({ defaultBindingMode: bindingMode.twoWay }) tableOutput: any;
 	@bindable compareOptions: string[] = [];
+	@bindable({ defaultBindingMode: bindingMode.twoWay }) timePeriod: any = {week_start: new Set(), week_end: new Set(), month_start: new Set(), month_end: new Set(), year_start: new Set(), year_end: new Set(), period_start: '', period_end: ''};
 	@bindable({ defaultBindingMode: bindingMode.twoWay }) compareList: string[] = [];
 	@bindable({ defaultBindingMode: bindingMode.twoWay }) dataTypes: string[] = [];
 	@bindable({ defaultBindingMode: bindingMode.twoWay }) filterList: string[] = [];
@@ -110,11 +111,20 @@ export class HomeLanding {
 		
 		let tempArray = this.model.map((obj) => {
 			const result = obj.dataset;
-			if (!this.compareOptions.length) {
-				for (let i = 0, ii = result.length; i < ii; i++) {
-					if (this.compareOptions.indexOf(result[i].brand) === -1) this.compareOptions.push(result[i].brand);
-				}
+			// initialize compare options
+			for (let i = 0, ii = result.length; i < ii; i++) {
+				if (this.compareOptions.indexOf(result[i].brand) === -1) this.compareOptions.push(result[i].brand);
+				this.timePeriod.week_start.add(result[i].time_period.week_start);
+		    	this.timePeriod.week_end.add(result[i].time_period.week_end);
+		    	this.timePeriod.month_start.add(result[i].time_period.month_start);
+		    	this.timePeriod.month_end.add(result[i].time_period.month_end);
+		    	this.timePeriod.year_start.add(result[i].time_period.year_start);
+		    	this.timePeriod.year_end.add(result[i].time_period.year_end);
 			}
+
+			// initialize time periods
+			if (!this.timePeriod.period_start) this.timePeriod.period_start = result[0].time_period[this.pageState.time_frame + '_start'];
+			if (!this.timePeriod.period_end) this.timePeriod.period_end = result[0].time_period.[this.pageState.time_frame + '_end'];
 	    	return result;
 	  	});
 	  	tempArray = [].concat.apply([], tempArray);
@@ -348,8 +358,15 @@ export class HomeLanding {
 	 * @return [array]
 	 */
 	private rankingPivot(data) {
+		data = data.filter((obj) => {
+			let date = this.pageState.time_frame;
+	    	if ((new Date(obj.time_period[date + '_start'])) >= (new Date(this.timePeriod.period_start)) && (new Date(obj.time_period[date + '_end'])) <= (new Date(this.timePeriod.period_end))) {
+	    		return obj;
+	    	}
+		});
+
 		data = data.map((obj, index, arr) => {
-	    	let result = [];
+    		let result = [];
 	    	result[result.length] = this.filterByCompareList(obj.brand, 'Industry');
 	    	result[result.length] = obj.units;
 	    	let unitGrowth = index ? ((arr[index].units - arr[index - 1].units) / arr[index - 1].units) * 100 : 0;
@@ -479,6 +496,15 @@ export class HomeLanding {
 		this.observers.push(this.bindingEngine.propertyObserver(this.pageState, 'model')
       		.subscribe((newValue, oldValue) => this.updateDataTableAndChart()));
 		this.observers.push(this.bindingEngine.propertyObserver(this.pageState, 'time_frame')
+      		.subscribe((newValue, oldValue) => {
+      			this.timePeriod.period_start = '';
+      			this.timePeriod.period_end = '';
+      			this.updateDataTableAndChart();
+      			console.log({start: this.timePeriod.period_start, end: this.timePeriod.period_end})
+      		}));
+		this.observers.push(this.bindingEngine.propertyObserver(this.pageState.time_frame, 'period_start')
+      		.subscribe((newValue, oldValue) => this.updateDataTableAndChart()));
+		this.observers.push(this.bindingEngine.propertyObserver(this.pageState.time_frame, 'period_end')
       		.subscribe((newValue, oldValue) => this.updateDataTableAndChart()));
 		this.observers.push(this.bindingEngine.propertyObserver(this, 'compareList')
       		.subscribe((newValue, oldValue) => this.updateDataTableAndChart()));
@@ -514,7 +540,10 @@ export class HomeLanding {
 	attached(){
 		this.setObservers();
 		// initial model data fetch
-	    this.fetchModelData();
+	    this.fetchModelData()
+	    .then(() => {
+	    	$('#weekTimeFrame').click();
+	    });
 
 	}
 

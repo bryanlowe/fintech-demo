@@ -19,6 +19,9 @@ export class DataControlElement {
   @bindable({ defaultBindingMode: bindingMode.twoWay }) filterList: string[];
   @bindable({ defaultBindingMode: bindingMode.twoWay }) excludeIndustry: boolean = false;
   @bindable({ defaultBindingMode: bindingMode.twoWay }) displayAllRows: boolean = false;
+  @bindable({ defaultBindingMode: bindingMode.twoWay }) timePeriod: any;
+  @bindable periodStartList: string[] = [];
+  @bindable periodEndList: string[] = [];
   private observers: any[] = [];
   private mutationObservers: any[] = []; 
   constructor(private bindingEngine: BindingEngine, private events: EventAggregator, private taskQueue: TaskQueue){}
@@ -34,8 +37,10 @@ export class DataControlElement {
     // time frame buttons
     $('input[type="radio"][name="time_frame"]').change((event) => {
       const _jqThis = event.currentTarget;
-      if ($(_jqThis).is(':checked')) 
+      if ($(_jqThis).is(':checked')) {
         this.pageState.time_frame = $(_jqThis).val();
+        this.updateTimePeriods();
+      }
     });
 
     // display options buttons
@@ -59,6 +64,7 @@ export class DataControlElement {
     });
 
     this.initDataTypes();
+    this.initPeriodLists();
 
     // keeping dropdowns open if needed
     $('.keep-open').on({
@@ -104,6 +110,31 @@ export class DataControlElement {
     if (this.pageState.model === 'ranking') $('input[type="checkbox"][name="filter_item"]:first').click();
   }
 
+  updateTimePeriods() {
+    const date = this.pageState.time_frame ? this.pageState.time_frame : 'week';
+    this.periodStartList = Array.from(this.timePeriod[date + '_start']);
+    this.periodEndList = Array.from(this.timePeriod[date + '_end']);
+  }
+
+  initPeriodLists() {
+    // time period buttons
+    $('input[type="radio"][name="period_start"]').unbind('change');
+    $('input[type="radio"][name="period_start"]').change((event) => {
+      const _jqThis = event.currentTarget;
+      if ($(_jqThis).is(':checked'))
+        this.timePeriod.period_start = $(_jqThis).val();
+      console.log({start: this.timePeriod.period_start});
+    });
+
+    $('input[type="radio"][name="period_end"]').unbind('change');
+    $('input[type="radio"][name="period_end"]').change((event) => {
+      const _jqThis = event.currentTarget;
+      if ($(_jqThis).is(':checked'))
+        this.timePeriod.period_end = $(_jqThis).val();
+      console.log({end: this.timePeriod.period_end});
+    });
+  }
+
   attached(){
     // initialize controls
     this.initialize();
@@ -124,11 +155,25 @@ export class DataControlElement {
     });
     this.mutationObservers.push(filterlistObserver.observe($('#filterList')[0], {childList: true, subtree: true, characterData: true}));
 
+    let periodStartListObserver = DOM.createMutationObserver(() => {
+      this.initDataTypes();
+    });
+    this.mutationObservers.push(periodStartListObserver.observe($('#periodStartList')[0], {childList: true, subtree: true, characterData: true}));
+
+    let periodEndListObserver = DOM.createMutationObserver(() => {
+      this.initDataTypes();
+    });
+    this.mutationObservers.push(periodEndListObserver.observe($('#periodEndList')[0], {childList: true, subtree: true, characterData: true}));
+
     // set au observers
     this.observers.push(this.bindingEngine.propertyObserver(this, 'dataTypes')
           .subscribe((newValue, oldValue) => this.initDataTypes()));
     this.observers.push(this.bindingEngine.propertyObserver(this, 'filterList')
           .subscribe((newValue, oldValue) => this.initFilterOptions()));
+    this.observers.push(this.bindingEngine.propertyObserver(this, 'periodStartList')
+          .subscribe((newValue, oldValue) => this.initPeriodLists()));
+    this.observers.push(this.bindingEngine.propertyObserver(this, 'periodEndList')
+          .subscribe((newValue, oldValue) => this.initPeriodLists()));
   }
 
   /**
