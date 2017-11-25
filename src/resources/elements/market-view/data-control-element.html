@@ -53,17 +53,17 @@
 		</div> 
 
 		<div class="pull-left" style="margin-right: 15px;">
-			<div id="dataTypeList" class="dropdown btn-group">
+			<div id="data_type_list" class="dropdown btn-group">
               	<button type="button" class="btn btn-dark">Data Type</button>
               	<button type="button" class="btn btn-dark dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
                 	<span class="caret"></span>
                 	<span class="sr-only">Toggle Dropdown</span>
               	</button>
               	<div class="btn-group-vertical dropdown-menu" data-toggle="buttons" role="menu">
-              		<label if.bind="pageState.model === 'ranking'" class="btn btn-dark active" repeat.for="type of dataTypes">
+              		<label if.bind="page_state.model === 'ranking'" class="btn btn-dark active" repeat.for="type of model_state.data_types">
               			<input type="checkbox" name="data_type" value="${type}" checked> ${type}
               		</label>
-              		<label if.bind="pageState.model !== 'ranking'" class="btn btn-dark" class.bind="$first ? 'active' : ''" repeat.for="type of dataTypes">
+              		<label if.bind="page_state.model !== 'ranking'" class="btn btn-dark" class.bind="$first ? 'active' : ''" repeat.for="type of model_state.data_types">
               			<input type="radio" name="data_type" value="${type}"> ${type}
               		</label>
 	            </div>	
@@ -71,22 +71,22 @@
 		</div>
 
 		<div class="pull-left" style="margin-right: 15px;">
-			<div id="filterList" class="dropdown keep-open btn-group">
+			<div id="filter_list" class="dropdown keep-open btn-group">
               	<button type="button" class="dLabel btn btn-dark">Filter</button>
               	<button type="button" class="dToggle btn btn-dark dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
                 	<span class="caret"></span>
                 	<span class="sr-only">Toggle Dropdown</span>
               	</button>
               	<div class="btn-group-vertical dropdown-menu" data-toggle="buttons" role="menu">
-              		<label class="btn btn-dark" repeat.for="item of filterList">
+              		<label class="btn btn-dark" repeat.for="item of model_state.filter_list">
               			<input type="checkbox" name="filter_item" value="${item}"> ${item}
               		</label>
 	            </div>	
             </div>
 		</div>
 
-		<div show.bind="pageState.model !== 'ranking'" class="pull-left" style="margin-right: 15px;">
-			<div id="compareEntries" class="dropdown keep-open btn-group">
+		<div show.bind="page_state.model !== 'ranking'" class="pull-left" style="margin-right: 15px;">
+			<div id="compare_entries" class="dropdown keep-open btn-group">
               	<button type="button" class="dLabel btn btn-dark">Compare</button>
               	<button type="button" class="dToggle btn btn-dark dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
                 	<span class="caret"></span>
@@ -96,14 +96,14 @@
               		<label class="btn btn-dark active">
 			          	<input type="checkbox" name="industry" checked> Industry
 			        </label>
-              		<label class="btn btn-dark" repeat.for="item of compareOptions">
+              		<label class="btn btn-dark" repeat.for="item of model_state.compare_options">
               			<input type="checkbox" name="compare_option" value="${item}"> ${item}
               		</label>
 	            </div>	
             </div>
 		</div> 
 
-		<div show.bind="pageState.model !== 'ranking'" class="pull-left" style="margin-right: 15px;">
+		<div show.bind="page_state.model !== 'ranking'" class="pull-left" style="margin-right: 15px;">
 			<div class="btn-group" data-toggle="buttons">
 		        <label class="btn btn-dark active">
 		          	<input type="radio" name="graph_type" value="line" id="lineGraphType"> Line
@@ -132,32 +132,20 @@
 			    </div>
 			</div>
 		</div>
-		<div show.bind="pageState.model === 'ranking'" id="time-period-dropdowns" class="pull-left" style="margin-right: 15px;">
-			<div id="periodStartList" show.bind="periodStartList.length" class="btn-group" style="margin-right: 15px;">
-              	<button type="button" class="btn btn-dark">Starting Period</button>
+		<!--div show.bind="page_state.model === 'ranking'" id="time-period-dropdown" class="pull-left" style="margin-right: 15px;">
+			<div id="timePeriodList" show.bind="timePeriodList.length" class="btn-group">
+              	<button type="button" class="btn btn-dark">Time Period</button>
               	<button type="button" class="btn btn-dark dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
                 	<span class="caret"></span>
                 	<span class="sr-only">Toggle Dropdown</span>
               	</button>
               	<div class="btn-group-vertical dropdown-menu" data-toggle="buttons" role="menu" style="max-height: 200px; overflow-y: auto;">
-	                <label class="btn btn-dark" repeat.for="date of periodStartList">
-              			<input type="radio" name="period_start" value="${date}"> ${date}
+	                <label class="btn btn-dark" repeat.for="timePeriod of timePeriodList">
+              			<input type="radio" name="time_period" value="${timePeriod}"> ${timePeriod}
               		</label>
 	            </div>	
             </div>
-            <div id="periodEndList" show.bind="periodEndList.length" class="btn-group">
-              	<button type="button" class="btn btn-dark">Ending Period</button>
-              	<button type="button" class="btn btn-dark dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
-                	<span class="caret"></span>
-                	<span class="sr-only">Toggle Dropdown</span>
-              	</button>
-              	<div class="btn-group-vertical dropdown-menu" data-toggle="buttons" role="menu" style="max-height: 200px; overflow-y: auto;">
-	                <label class="btn btn-dark" repeat.for="date of periodEndList">
-              			<input type="radio" name="period_end" value="${date}"> ${date}
-              		</label>
-	            </div>	
-            </div>
-		</div>
+		</div-->
 		<div class="pull-left" style="margin-right: 15px;">
 			<div class="btn-group" data-toggle="buttons">
 		        <label class="btn btn-dark active">

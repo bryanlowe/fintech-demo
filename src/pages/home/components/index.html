@@ -16,15 +16,15 @@
                         <div id="market_view_controls">
                             <div class="x_panel">
                                 <div class="x_content">
-                                    <data-control page-state.bind="pageState" compare-list.bind="compareList" compare-options.bind="compareOptions" exclude-industry.bind="excludeIndustry" data-types.bind="dataTypes" filter-list.bind="filterList" display-all-rows.bind="displayAllRows" num-active-filters.bind="numActiveFilters" time-period.bind="timePeriod"></data-control>
+                                    <data-control page_state.bind="page_state" model_state.bind="model_state" display_all_rows.bind="display_all_rows"></data-control>
                                 </div>
                             </div>
                         </div>
                         
-                        <div id="market_view_chart" show.bind="pageState.model !== 'ranking'">
+                        <div id="market_view_chart" show.bind="page_state.model !== 'ranking'">
                             <div class="x_panel">
                                 <div class="x_content">
-                                    <data-graph graph-data.bind="graphData"></data-graph>
+                                    <data-graph graph_input.bind="graph_input"></data-graph>
                                 </div>
                             </div>
                         </div>
@@ -32,7 +32,7 @@
                         <div id="market_view_table">
                             <div class="x_panel">
                                 <div class="x_content">
-                                    <data-table table-input.bind="tableInput" table-output.bind="tableOutput" display-all-rows.bind="displayAllRows"></data-table>
+                                    <data-table table_input.bind="table_input" table_output.bind="table_output" display_all_rows.bind="display_all_rows"></data-table>
                                 </div>
                             </div>
                         </div>

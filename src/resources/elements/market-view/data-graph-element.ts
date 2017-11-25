@@ -11,34 +11,35 @@ import * as Chart from 'chart.js';
  */
 @inject(BindingEngine)
 export class DataGraphElement { 
-	@bindable graphData: any = {type: '', data: {labels: [], datasets: []}, options: {}}; 
+	@bindable graph_input: any; 
   private subscription: any = null;
 
-  constructor(private bindingEngine: BindingEngine){}
+  constructor(private binding_engine: BindingEngine){}
 
   /**
    * updates the data graph
    */
   private updateDataGraph(){
     $('#chartjsGraph, .chartjs-hidden-iframe').remove();
-    if(this.graphData.type === 'pie'){
+    if(this.graph_input.type === 'pie'){
       $('#graph-container').css('width', '600px');
     } else {
       $('#graph-container').css('width', '1072px');
     }
     $('#graph-container').append('<canvas id="chartjsGraph"></canvas>');
-    let context = $("#chartjsGraph")[0];
-    let chart = new Chart(context, {
-        type: this.graphData.type,
-        data: this.graphData.data,
-        options: this.graphData.options
+    const context = $("#chartjsGraph")[0];
+    console.log(this.graph_input.toJSON());
+    const chart = new Chart(context, {
+        type: this.graph_input.type,
+        data: this.graph_input.data,
+        options: this.graph_input.options
     });
   }
 
 	attached(){
     // subscribe to data table row changes
-    this.subscription = this.bindingEngine.propertyObserver(this.graphData, 'data')
-      .subscribe((newValue, oldValue) => this.updateDataGraph());
+    this.subscription = this.binding_engine.propertyObserver(this, 'graph_input')
+      .subscribe((new_value, old_value) => this.updateDataGraph());
   }
 
   detached(){

@@ -14,14 +14,14 @@ import './../../../scripts/vendors/pivot/jquery_pivot.js';
  */
 @inject(BindingEngine, EventAggregator)
 export class DataTableElement { 
-	@bindable tableInput: any = {json: ''}; 
-  @bindable displayAllRows: boolean = false; 
-  @bindable({ defaultBindingMode: bindingMode.twoWay }) tableOutput: any;  
+	@bindable table_input: any; 
+  @bindable display_all_rows: boolean = false; 
+  @bindable({ defaultBindingMode: bindingMode.twoWay }) table_output: any;  
   private subscription: any = null;
-  private dataTable: any = null;
-  private hiddenColumns = [];
+  private data_table: any = null;
+  private hidden_columns = [];
 
-  constructor(private bindingEngine: BindingEngine, private events: EventAggregator){}
+  constructor(private binding_engine: BindingEngine, private events: EventAggregator){}
 
   spinnerOpen() {
     this.events.publish('$openSpinner');
@@ -31,18 +31,11 @@ export class DataTableElement {
     this.events.publish('$closeSpinner');
   }
 
-  /**
-   * updates the pivot table
-   */
-  private updatePivottable(){
-        this.setupPivot(this.tableInput);  
-  }
-
   private outputData() {
-    let exportConfig = {
+    let export_config = {
       modifier: {
-        order: this.displayAllRows ? 'current' : 'index',
-        page: this.displayAllRows ? 'all' : 'current',
+        order: this.display_all_rows ? 'current' : 'index',
+        page: this.display_all_rows ? 'all' : 'current',
       },
       format: {
         body: (innerHtml, rowIndex, columnIndex, cellNode) => {
@@ -51,20 +44,20 @@ export class DataTableElement {
         }
       }
     };
-    if (this.hiddenColumns.length) {
-      exportConfig['columns'] = Array.from(Array(this.dataTable.columns().header().length).keys()).filter((value) => this.hiddenColumns.indexOf(value) === -1);
+    if (this.hidden_columns.length) {
+      export_config['columns'] = Array.from(Array(this.data_table.columns().header().length).keys()).filter((value) => this.hidden_columns.indexOf(value) === -1);
     }
-    const data = this.dataTable.buttons.exportData(exportConfig);
-    this.tableOutput = data;
+    const data = this.data_table.buttons.exportData(export_config);
+    this.table_output = data;
   }
 
   private setupPivot(input){
     this.spinnerOpen();
-    if(DataTable){ // check if the plugin exists, there is a delay between loading and attaching
-      this.hiddenColumns = [];
+    if (DataTable) { // check if the plugin exists, there is a delay between loading and attaching
+      this.hidden_columns = [];
       $('.pivot_header_fields').remove();
       input.callbacks = {afterUpdateResults: () => { 
-          this.dataTable = $('#data-table-container table').DataTable({
+          this.data_table = $('#data-table-container table').DataTable({
             scrollY: "500px",
             scrollX: "1200px",
             scrollCollapse: true,
@@ -73,10 +66,10 @@ export class DataTableElement {
           $('#data-table-container table').addClass('table-bordered');
           $('#data-table-container table th, #data-table-container table td').css('white-space', 'nowrap');
           $('#data-table-container table th').css('font-size', '10px');
-          this.dataTable.on('draw', () => {
+          this.data_table.on('draw', () => {
             this.outputData();
           });
-          this.dataTable.column('0:visible').order('asc').draw();
+          this.data_table.column('0:visible').order('asc').draw();
           this.hideExtraColumns();
       }};
       $('#data-menu-container').pivot_display('setup', input);
@@ -89,24 +82,24 @@ export class DataTableElement {
   }
 
   private hideExtraColumns() {
-    const columnLimit = 12;
-    const numOfColumns = this.dataTable.columns().header().length;
-    const filterNum = $('input.row-labelable:checked').length;
-    const extraColumns = numOfColumns > columnLimit ? numOfColumns - columnLimit : 0;
-    if (extraColumns) {     
-      this.hiddenColumns = Array.from(Array(extraColumns).keys()).filter((value) => value >= filterNum);
-      this.dataTable.columns(this.hiddenColumns).visible(false, false);
-      this.dataTable.columns.adjust().draw(false); // adjust column sizing and redraw
+    const column_limit = 12;
+    const num_of_columns = this.data_table.columns().header().length;
+    const filter_num = $('input.row-labelable:checked').length;
+    const extra_columns = num_of_columns > column_limit ? num_of_columns - column_limit : 0;
+    if (extra_columns) {     
+      this.hidden_columns = Array.from(Array(extra_columns).keys()).filter((value) => value >= filter_num);
+      this.data_table.columns(this.hidden_columns).visible(false, false);
+      this.data_table.columns.adjust().draw(false); // adjust column sizing and redraw
     }
   }
 
 
 	attached(){
     // subscribe to data table row changes
-    this.subscription = this.bindingEngine.propertyObserver(this.tableInput, 'json')
-        .subscribe((newValue, oldValue) => this.updatePivottable());
-    this.subscription = this.bindingEngine.propertyObserver(this, 'displayAllRows')
-        .subscribe((newValue, oldValue) => this.outputData());
+    this.subscription = this.binding_engine.propertyObserver(this, 'table_input')
+        .subscribe((new_value, old_value) => this.setupPivot(new_value));
+    this.subscription = this.binding_engine.propertyObserver(this, 'display_all_rows')
+        .subscribe((new_value, old_value) => this.outputData());
   }
 
   detached(){

@@ -8,5 +8,8 @@ export function configure(config: FrameworkConfiguration) {
   	'./elements/market-view/data-table-element',
   	'./elements/market-view/data-control-element',
   	'./elements/market-view/pivot-table-element',
+
+  	// plugins
+  	'./plugins/palette',
   ]);
 }

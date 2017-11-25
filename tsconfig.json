@@ -10,7 +10,12 @@
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "moduleResolution": "node",
-    "lib": ["es2017", "dom"]
+    "lib": ["es2017", "dom"],
+    "baseUrl": ".",
+    "paths": {
+      "*":["src/*", "scripts/*"]
+    },
+    "allowJs": true
   },
   "exclude": [
     "node_modules"
