@@ -17,21 +17,11 @@ export class DataGraphModel {
 	}
 
 	/**
-	 * Retrieves the graph data object
-	 * @param string[] labels
+	 * returns the GraphData class object
 	 * @return void
 	 */
-	setDataLabels(labels: string[] = []): void {
-		this.graph_data.setLabels(labels);
-	}
-
-	/**
-	 * updates the dataset for the data class
-	 * @param GraphDataset dataset
-	 * @return void
-	 */
-	addDataset(dataset: GraphDataset): void {
-		this.graph_data.addDataset(dataset);
+	getGraphData(): GraphData {
+		return this.graph_data;
 	}
 
 	/**
@@ -41,38 +31,8 @@ export class DataGraphModel {
 	getGraphInput(): any {
 		return {
 			type: this.graph_type,
-			data: this.graph_data,
-			options: this.graph_options,
-			toJSON(proto) {
-			    let jsoned = {};
-			    let toConvert = proto || this;
-			    Object.getOwnPropertyNames(toConvert).forEach((prop) => {
-			        const val = toConvert[prop];
-			        // don't include those
-			        if (prop === 'toJSON' || prop === 'constructor') {
-			            return;
-			        }
-			        if (typeof val === 'function') {
-			            jsoned[prop] = val.bind(jsoned);
-			            return;
-			        }
-			        jsoned[prop] = val;
-			    });
-
-			    const inherited = Object.getPrototypeOf(toConvert);
-			    if (inherited !== null) {
-			        Object.keys(this.toJSON(inherited)).forEach(key => {
-			            if (!!jsoned[key] || key === 'constructor' || key === 'toJSON')
-			                return;
-			            if (typeof inherited[key] === 'function') {
-			                jsoned[key] = inherited[key].bind(jsoned);
-			                return;
-			            }
-			            jsoned[key] = inherited[key];
-			        });
-			    }
-			    return jsoned;
-			}
+			data: this.graph_data.getGraphDataInput(),
+			options: this.graph_options
 		};
 	}
 }
@@ -82,7 +42,7 @@ export class DataGraphModel {
  */
 class GraphData {
 	private labels: string[];
-	private datasets: GraphDataset[] = [];
+	private datasets: any[] = [];
 
 	/**
 	 * Sets the labels for the data class
@@ -95,23 +55,29 @@ class GraphData {
 
 	/**
 	 * updates the dataset for the data class
-	 * @param GraphDataset dataset
+	 * @param any dataset
 	 * @return void
 	 */
-	addDataset(dataset: GraphDataset): void {
+	addDataset(dataset: any): void {
 		this.datasets.push(dataset);
 	}
-}
 
-/**
- * Graph data set class
- */
-export class GraphDataset {
-	constructor(
-		private fill: boolean, 
-		private label: string, 
-		private data: number[],
-		private backgroundColor: string | string[],
-		private borderColor: string | string[]
-	){}
+	/**
+	 * resets the dataset for the data class
+	 * @return void
+	 */
+	resetDataset(): void {
+		this.datasets = [];
+	}
+
+	/**
+	 * Returns the graph data properties
+	 * @return object
+	 */
+	getGraphDataInput(): any {
+		return {
+			labels: this.labels,
+			datasets: this.datasets
+		};
+	}
 }

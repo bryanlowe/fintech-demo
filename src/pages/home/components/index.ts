@@ -59,9 +59,7 @@ export class HomeLanding {
 			this.updateModelProperties();
 			this.model_state = this.model_list[this.page_state.model].getModelState();
 			this.table_input = this.model_list[this.page_state.model].updateDataTable();
-		} else {
-			this.fetchModelData();
-		}
+		} 
 	}
 
 	/**
@@ -93,9 +91,6 @@ export class HomeLanding {
 			.then(data => {_class.model_data = data})
 			.then(() => {
 				this.spinnerClose();
-				this.updateModelProperties();
-				this.model_state = this.model_list[this.page_state.model].getModelState();
-				this.table_input = this.model_list[this.page_state.model].updateDataTable();
 			});
 	}
 
@@ -104,17 +99,35 @@ export class HomeLanding {
 	 */
 	private setObservers(){
 		this.observers.push(this.bindingEngine.propertyObserver(this, 'table_output')
-      		.subscribe((newValue, oldValue) => this.updateDataGraph()));
+      		.subscribe((newValue, oldValue) => {
+      			this.updateDataGraph();
+      			console.log('Update Data Graph from table_output', newValue);
+      		}));
 		this.observers.push(this.bindingEngine.propertyObserver(this.page_state, 'graph_type')
-      		.subscribe((newValue, oldValue) => this.updateDataGraph()));
+      		.subscribe((newValue, oldValue) => {
+      			this.updateDataGraph();
+      			console.log('Update Data Graph from graph_type');
+      		}));
 		this.observers.push(this.bindingEngine.propertyObserver(this.page_state, 'model')
-      		.subscribe((newValue, oldValue) => this.updateDataTable()));
+      		.subscribe((newValue, oldValue) => {
+      			this.updateDataTable();
+      			console.log('Update Data Table from model');
+      		}));
 		this.observers.push(this.bindingEngine.propertyObserver(this.page_state, 'time_frame')
-      		.subscribe((newValue, oldValue) => this.updateDataTable()));	
+      		.subscribe((newValue, oldValue) => {
+      			this.updateDataTable();
+      			console.log('Update Data Table from time_frame');
+      		}));	
 		this.observers.push(this.bindingEngine.propertyObserver(this.page_state, 'compare_list')
-      		.subscribe((newValue, oldValue) => this.updateDataTable()));
+      		.subscribe((newValue, oldValue) => {
+      			//this.updateDataTable();
+      			console.log('Update Data Table from compare_list');
+      		}));
 		this.observers.push(this.bindingEngine.propertyObserver(this.page_state, 'exclude_industry')
-      		.subscribe((newValue, oldValue) => this.updateDataTable()));
+      		.subscribe((newValue, oldValue) => {
+      			this.updateDataTable();
+      			console.log('Update Data Table from exclude_industry');
+      		}));
 	}
 
 	/**
@@ -125,7 +138,8 @@ export class HomeLanding {
 		// initial model data fetch
 	    this.fetchModelData()
 	    .then(() => {
-	    	$('#weekTimeFrame').click();
+	    	this.updateDataTable();
+	    	//$('#weekTimeFrame').click();
 	    });
 
 	}

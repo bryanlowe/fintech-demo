@@ -75,46 +75,14 @@ define('models/marketview/DataGraphModel',["require", "exports"], function (requ
         DataGraphModel.prototype.setGraphOptions = function (graph_options) {
             this.graph_options = graph_options || {};
         };
-        DataGraphModel.prototype.setDataLabels = function (labels) {
-            if (labels === void 0) { labels = []; }
-            this.graph_data.setLabels(labels);
-        };
-        DataGraphModel.prototype.addDataset = function (dataset) {
-            this.graph_data.addDataset(dataset);
+        DataGraphModel.prototype.getGraphData = function () {
+            return this.graph_data;
         };
         DataGraphModel.prototype.getGraphInput = function () {
             return {
                 type: this.graph_type,
-                data: this.graph_data,
-                options: this.graph_options,
-                toJSON: function (proto) {
-                    var jsoned = {};
-                    var toConvert = proto || this;
-                    Object.getOwnPropertyNames(toConvert).forEach(function (prop) {
-                        var val = toConvert[prop];
-                        if (prop === 'toJSON' || prop === 'constructor') {
-                            return;
-                        }
-                        if (typeof val === 'function') {
-                            jsoned[prop] = val.bind(jsoned);
-                            return;
-                        }
-                        jsoned[prop] = val;
-                    });
-                    var inherited = Object.getPrototypeOf(toConvert);
-                    if (inherited !== null) {
-                        Object.keys(this.toJSON(inherited)).forEach(function (key) {
-                            if (!!jsoned[key] || key === 'constructor' || key === 'toJSON')
-                                return;
-                            if (typeof inherited[key] === 'function') {
-                                jsoned[key] = inherited[key].bind(jsoned);
-                                return;
-                            }
-                            jsoned[key] = inherited[key];
-                        });
-                    }
-                    return jsoned;
-                }
+                data: this.graph_data.getGraphDataInput(),
+                options: this.graph_options
             };
         };
         return DataGraphModel;
@@ -131,19 +99,17 @@ define('models/marketview/DataGraphModel',["require", "exports"], function (requ
         GraphData.prototype.addDataset = function (dataset) {
             this.datasets.push(dataset);
         };
+        GraphData.prototype.resetDataset = function () {
+            this.datasets = [];
+        };
+        GraphData.prototype.getGraphDataInput = function () {
+            return {
+                labels: this.labels,
+                datasets: this.datasets
+            };
+        };
         return GraphData;
     }());
-    var GraphDataset = (function () {
-        function GraphDataset(fill, label, data, backgroundColor, borderColor) {
-            this.fill = fill;
-            this.label = label;
-            this.data = data;
-            this.backgroundColor = backgroundColor;
-            this.borderColor = borderColor;
-        }
-        return GraphDataset;
-    }());
-    exports.GraphDataset = GraphDataset;
 });
 
 define('models/marketview/DataTableModel',["require", "exports"], function (require, exports) {
@@ -266,6 +232,8 @@ define('models/marketview/MarketViewModel',["require", "exports", "./DataGraphMo
         MarketViewModel.prototype.setTimeFrame = function (mode) {
             this.time_frame_mode = mode || 'week';
         };
+        MarketViewModel.prototype.updateModelState = function () {
+        };
         MarketViewModel.prototype.setCompareList = function (list, exclude_industry) {
             if (exclude_industry === void 0) { exclude_industry = false; }
             this.compare_list = list || [];
@@ -331,35 +299,57 @@ define('models/marketview/MarketViewModel',["require", "exports", "./DataGraphMo
             return this.data_graphs[type].getGraphInput();
         };
         MarketViewModel.prototype.createLineGraph = function (graph_input) {
+            var gd = this.data_graphs.line.getGraphData();
             var options = { responsive: true, scales: { xAxes: [{ ticks: { autoSkip: false } }] } };
             if (graph_input.graph_data.length > 20)
                 options['legend'] = { display: false };
             this.data_graphs.line.setGraphOptions(options);
-            this.data_graphs.line.setDataLabels(graph_input.graph_labels);
+            gd.setLabels(graph_input.graph_labels);
+            gd.resetDataset();
             for (var i = 0, ii = graph_input.graph_data.length; i < ii; i++) {
-                this.data_graphs.line.addDataset(new DataGraphModel_1.GraphDataset(false, graph_input.graph_dataset_labels[i], graph_input.graph_data[i], graph_input.colors[i], graph_input.colors[i]));
+                gd.addDataset({
+                    fill: false,
+                    label: graph_input.graph_dataset_labels[i],
+                    data: graph_input.graph_data[i],
+                    backgroundColor: graph_input.colors[i],
+                    borderColor: graph_input.colors[i]
+                });
             }
         };
         MarketViewModel.prototype.createBarGraph = function (graph_input) {
+            var gd = this.data_graphs.bar.getGraphData();
             var options = { responsive: true, scales: { yAxes: [{ ticks: { beginAtZero: true } }], xAxes: [{ ticks: { autoSkip: false } }] } };
             if (graph_input.graph_data.length > 20)
                 options['legend'] = { display: false };
             this.data_graphs.bar.setGraphOptions(options);
-            this.data_graphs.bar.setDataLabels(graph_input.graph_labels);
+            gd.setLabels(graph_input.graph_labels);
+            gd.resetDataset();
             for (var i = 0, ii = graph_input.graph_data.length; i < ii; i++) {
-                this.data_graphs.bar.addDataset(new DataGraphModel_1.GraphDataset(false, graph_input.graph_dataset_labels[i], graph_input.graph_data[i], graph_input.colors[i], graph_input.colors[i]));
+                gd.addDataset({
+                    fill: false,
+                    label: graph_input.graph_dataset_labels[i],
+                    data: graph_input.graph_data[i],
+                    backgroundColor: graph_input.colors[i],
+                    borderColor: graph_input.colors[i]
+                });
             }
         };
         MarketViewModel.prototype.createPieGraph = function (graph_input) {
+            var gd = this.data_graphs.pie.getGraphData();
             var options = { responsive: true, legend: false };
             var labels = [], totals = [];
             this.data_graphs.pie.setGraphOptions(options);
+            gd.resetDataset();
             for (var i = 0, ii = graph_input.graph_data.length; i < ii; i++) {
-                labels.push(graph_input.graph_data.graph_dataset_labels[i]);
+                labels.push(graph_input.graph_dataset_labels[i]);
                 totals.push(graph_input.graph_data[i].reduce(function (a, b) { return a + b; }, 0));
             }
-            this.data_graphs.pie.setDataLabels(labels);
-            this.data_graphs.pie.addDataset(new DataGraphModel_1.GraphDataset(false, '', totals, graph_input.colors, ''));
+            gd.setLabels(labels);
+            gd.addDataset({
+                fill: false,
+                data: totals,
+                backgroundColor: graph_input.colors
+            });
         };
         MarketViewModel.prototype.getGraphInput = function (type) {
             return this.updateDataGraph(type);
@@ -745,6 +735,31 @@ define('resources/index',["require", "exports"], function (require, exports) {
     exports.configure = configure;
 });
 
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+define('pages/home/main',["require", "exports", "aurelia-framework"], function (require, exports, aurelia_framework_1) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    var Home = (function () {
+        function Home() {
+        }
+        Home.prototype.configureRouter = function (config) {
+            config.map([
+                { route: '', name: 'welcome', moduleId: './components/index', title: 'FSI - Welcome' }
+            ]);
+        };
+        Home = __decorate([
+            aurelia_framework_1.inlineView('<template><router-view></router-view></template>')
+        ], Home);
+        return Home;
+    }());
+    exports.Home = Home;
+});
+
 define('pages/page-elements/sidebar-menu',["require", "exports", "jquery"], function (require, exports, $) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
@@ -866,31 +881,6 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
-define('pages/home/main',["require", "exports", "aurelia-framework"], function (require, exports, aurelia_framework_1) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    var Home = (function () {
-        function Home() {
-        }
-        Home.prototype.configureRouter = function (config) {
-            config.map([
-                { route: '', name: 'welcome', moduleId: './components/index', title: 'FSI - Welcome' }
-            ]);
-        };
-        Home = __decorate([
-            aurelia_framework_1.inlineView('<template><router-view></router-view></template>')
-        ], Home);
-        return Home;
-    }());
-    exports.Home = Home;
-});
-
-var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
-};
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
@@ -934,9 +924,6 @@ define('pages/home/components/index',["require", "exports", "aurelia-fetch-clien
                 this.model_state = this.model_list[this.page_state.model].getModelState();
                 this.table_input = this.model_list[this.page_state.model].updateDataTable();
             }
-            else {
-                this.fetchModelData();
-            }
         };
         HomeLanding.prototype.updateDataGraph = function () {
             this.table_output['filter_limit'] = $('input.row-labelable:checked').length;
@@ -958,31 +945,46 @@ define('pages/home/components/index',["require", "exports", "aurelia-fetch-clien
                 .then(function (data) { _class.model_data = data; })
                 .then(function () {
                 _this.spinnerClose();
-                _this.updateModelProperties();
-                _this.model_state = _this.model_list[_this.page_state.model].getModelState();
-                _this.table_input = _this.model_list[_this.page_state.model].updateDataTable();
             });
         };
         HomeLanding.prototype.setObservers = function () {
             var _this = this;
             this.observers.push(this.bindingEngine.propertyObserver(this, 'table_output')
-                .subscribe(function (newValue, oldValue) { return _this.updateDataGraph(); }));
+                .subscribe(function (newValue, oldValue) {
+                _this.updateDataGraph();
+                console.log('Update Data Graph from table_output', newValue);
+            }));
             this.observers.push(this.bindingEngine.propertyObserver(this.page_state, 'graph_type')
-                .subscribe(function (newValue, oldValue) { return _this.updateDataGraph(); }));
+                .subscribe(function (newValue, oldValue) {
+                _this.updateDataGraph();
+                console.log('Update Data Graph from graph_type');
+            }));
             this.observers.push(this.bindingEngine.propertyObserver(this.page_state, 'model')
-                .subscribe(function (newValue, oldValue) { return _this.updateDataTable(); }));
+                .subscribe(function (newValue, oldValue) {
+                _this.updateDataTable();
+                console.log('Update Data Table from model');
+            }));
             this.observers.push(this.bindingEngine.propertyObserver(this.page_state, 'time_frame')
-                .subscribe(function (newValue, oldValue) { return _this.updateDataTable(); }));
+                .subscribe(function (newValue, oldValue) {
+                _this.updateDataTable();
+                console.log('Update Data Table from time_frame');
+            }));
             this.observers.push(this.bindingEngine.propertyObserver(this.page_state, 'compare_list')
-                .subscribe(function (newValue, oldValue) { return _this.updateDataTable(); }));
+                .subscribe(function (newValue, oldValue) {
+                console.log('Update Data Table from compare_list');
+            }));
             this.observers.push(this.bindingEngine.propertyObserver(this.page_state, 'exclude_industry')
-                .subscribe(function (newValue, oldValue) { return _this.updateDataTable(); }));
+                .subscribe(function (newValue, oldValue) {
+                _this.updateDataTable();
+                console.log('Update Data Table from exclude_industry');
+            }));
         };
         HomeLanding.prototype.attached = function () {
+            var _this = this;
             this.setObservers();
             this.fetchModelData()
                 .then(function () {
-                $('#weekTimeFrame').click();
+                _this.updateDataTable();
             });
         };
         HomeLanding.prototype.detached = function () {
@@ -1238,20 +1240,27 @@ define('resources/elements/market-view/data-graph-element',["require", "exports"
     var DataGraphElement = (function () {
         function DataGraphElement(binding_engine) {
             this.binding_engine = binding_engine;
-            this.subscription = null;
         }
         DataGraphElement.prototype.updateDataGraph = function () {
+            if (!this.chart || this.chart.config.type !== this.graph_input.type) {
+                this.createNewChart();
+                return;
+            }
+            this.chart.data = this.graph_input.data;
+            console.log(this.chart.data);
+            this.chart.update();
+        };
+        DataGraphElement.prototype.createNewChart = function () {
             $('#chartjsGraph, .chartjs-hidden-iframe').remove();
+            $('#graph-container').append('<canvas id="chartjsGraph"></canvas>');
             if (this.graph_input.type === 'pie') {
                 $('#graph-container').css('width', '600px');
             }
             else {
                 $('#graph-container').css('width', '1072px');
             }
-            $('#graph-container').append('<canvas id="chartjsGraph"></canvas>');
             var context = $("#chartjsGraph")[0];
-            console.log(this.graph_input.toJSON());
-            var chart = new Chart(context, {
+            this.chart = new Chart(context, {
                 type: this.graph_input.type,
                 data: this.graph_input.data,
                 options: this.graph_input.options
@@ -1343,10 +1352,10 @@ define('resources/elements/market-view/data-table-element',["require", "exports"
                         $('#data-table-container table').addClass('table-bordered');
                         $('#data-table-container table th, #data-table-container table td').css('white-space', 'nowrap');
                         $('#data-table-container table th').css('font-size', '10px');
+                        _this.data_table.column('0:visible').order('asc').draw();
                         _this.data_table.on('draw', function () {
                             _this.outputData();
                         });
-                        _this.data_table.column('0:visible').order('asc').draw();
                         _this.hideExtraColumns();
                     } };
                 $('#data-menu-container').pivot_display('setup', input);
@@ -1372,7 +1381,10 @@ define('resources/elements/market-view/data-table-element',["require", "exports"
         DataTableElement.prototype.attached = function () {
             var _this = this;
             this.subscription = this.binding_engine.propertyObserver(this, 'table_input')
-                .subscribe(function (new_value, old_value) { return _this.setupPivot(new_value); });
+                .subscribe(function (new_value, old_value) {
+                _this.setupPivot(new_value);
+                console.log({ table_input: new_value });
+            });
             this.subscription = this.binding_engine.propertyObserver(this, 'display_all_rows')
                 .subscribe(function (new_value, old_value) { return _this.outputData(); });
         };
@@ -3378,6 +3390,7 @@ define('text!less/mixins.css', ['module'], function(module) { module.exports = "
 define('text!less/variables.css', ['module'], function(module) { module.exports = ""; });
 define('text!pages/page-elements/site-footer.html', ['module'], function(module) { module.exports = "<template>  \r\n  <!-- footer content -->\r\n        <footer>\r\n          <div class=\"pull-right\">\r\n            Gentelella - Bootstrap Admin Template by <a href=\"https://colorlib.com\">Colorlib</a>\r\n          </div>\r\n          <div class=\"clearfix\"></div>\r\n        </footer>\r\n        <!-- /footer content -->\r\n</template>"; });
 define('text!pages/page-elements/topbar-menu.html', ['module'], function(module) { module.exports = "<template>\r\n  <!-- top navigation -->\r\n        <div class=\"top_nav\">\r\n            <div class=\"nav_menu\">\r\n                <nav style=\"height: 23px;\">\r\n                </nav>\r\n            </div>\r\n            </div>\r\n            <!-- /top navigation -->        \r\n</template>"; });
+define('text!resources/plugins/palette.html', ['module'], function(module) { module.exports = "<template></template>"; });
 define('text!pages/home/components/index.html', ['module'], function(module) { module.exports = "<template>\r\n    <!-- sidebar menu -->\r\n    <compose router.bind=\"router\" view-model=\"pages/page-elements/sidebar-menu\"></compose>\r\n    <!-- /sidebar menu -->\r\n\r\n    <!-- top navigation -->\r\n    <compose view-model=\"pages/page-elements/topbar-menu\"></compose>\r\n    <!-- /top navigation -->\r\n\r\n    <div class=\"right_col\" role=\"main\">\r\n        <!-- market view panel -->\r\n        <div id=\"market_view\" class=\"row\">\r\n            <div class=\"col-md-12 col-sm-12 col-xs-12\">\r\n                <div class=\"x_panel\">\r\n                    <div class=\"x_content\">\r\n                        <div id=\"market_view_controls\">\r\n                            <div class=\"x_panel\">\r\n                                <div class=\"x_content\">\r\n                                    <data-control page_state.bind=\"page_state\" model_state.bind=\"model_state\" display_all_rows.bind=\"display_all_rows\"></data-control>\r\n                                </div>\r\n                            </div>\r\n                        </div>\r\n                        \r\n                        <div id=\"market_view_chart\" show.bind=\"page_state.model !== 'ranking'\">\r\n                            <div class=\"x_panel\">\r\n                                <div class=\"x_content\">\r\n                                    <data-graph graph_input.bind=\"graph_input\"></data-graph>\r\n                                </div>\r\n                            </div>\r\n                        </div>\r\n\r\n                        <div id=\"market_view_table\">\r\n                            <div class=\"x_panel\">\r\n                                <div class=\"x_content\">\r\n                                    <data-table table_input.bind=\"table_input\" table_output.bind=\"table_output\" display_all_rows.bind=\"display_all_rows\"></data-table>\r\n                                </div>\r\n                            </div>\r\n                        </div>\r\n                    </div>\r\n                </div>\r\n            </div>\r\n        </div> \r\n    </div>\r\n</template>"; });
 define('text!resources/elements/common/load-spinner-element.html', ['module'], function(module) { module.exports = "<template>\r\n\t<require from=\"pure-css-loader/css-loader.css\"></require>\r\n\t<div id=\"load-spinner\" style=\"display: none;\">\r\n\t\t<div class=\"loader loader-default is-active\"></div>\r\n\t</div>\r\n</template>"; });
 define('text!resources/elements/market-view/data-control-element.html', ['module'], function(module) { module.exports = "<template>\r\n\t<div id=\"control-container\" class=\"row center-block\">\r\n\t\t<div class=\"pull-left\" style=\"margin-right: 15px;\">\r\n\t\t\t\r\n\t\t</div>\r\n\r\n\t\t<div class=\"pull-left\" style=\"margin-right: 15px;\">\r\n\t\t\t<div class=\"btn-group\">\r\n              \t<button type=\"button\" class=\"btn btn-dark\">Data Sets</button>\r\n              \t<button type=\"button\" class=\"btn btn-dark dropdown-toggle\" data-toggle=\"dropdown\" aria-expanded=\"false\">\r\n                \t<span class=\"caret\"></span>\r\n                \t<span class=\"sr-only\">Toggle Dropdown</span>\r\n              \t</button>\r\n              \t<div class=\"btn-group-vertical dropdown-menu\" data-toggle=\"buttons\" role=\"menu\">\r\n\t                <label class=\"btn btn-dark active\">\r\n\t\t\t         \t<input type=\"radio\" name=\"data_set\" value=\"brandshare\" id=\"brandshareModel\"> Dataset 1\r\n\t\t\t        </label>\r\n\t\t\t        <label class=\"btn btn-dark\">\r\n\t\t\t          \t<input type=\"radio\" name=\"data_set\" value=\"salesgrowth\" id=\"salesgrowthModel\"> Dataset 2\r\n\t\t\t        </label>\r\n\t\t\t        <label class=\"btn btn-dark\">\r\n\t\t\t          \t<input type=\"radio\" name=\"data_set\" value=\"pricing\" id=\"pricingModel\"> Dataset 3\r\n\t\t\t        </label>\r\n\t\t\t        <label class=\"btn btn-dark\">\r\n\t\t\t          \t<input type=\"radio\" name=\"data_set\" value=\"ranking\" id=\"rankingModel\"> Dataset 4\r\n\t\t\t        </label>\r\n\t            </div>\t\r\n            </div>\r\n\t\t</div>\r\n\r\n\t\t<div class=\"pull-left\" style=\"margin-right: 15px;\">\r\n\t\t\t<div class=\"btn-group\">\r\n              \t<button type=\"button\" class=\"btn btn-dark\">Data Model</button>\r\n              \t<button type=\"button\" class=\"btn btn-dark dropdown-toggle\" data-toggle=\"dropdown\" aria-expanded=\"false\">\r\n                \t<span class=\"caret\"></span>\r\n                \t<span class=\"sr-only\">Toggle Dropdown</span>\r\n              \t</button>\r\n              \t<div class=\"btn-group-vertical dropdown-menu\" data-toggle=\"buttons\" role=\"menu\">\r\n\t                <label class=\"btn btn-dark active\">\r\n\t\t\t         \t<input type=\"radio\" name=\"data_model\" value=\"brandshare\" id=\"brandshareModel\"> Brand Share\r\n\t\t\t        </label>\r\n\t\t\t        <label class=\"btn btn-dark\">\r\n\t\t\t          \t<input type=\"radio\" name=\"data_model\" value=\"salesgrowth\" id=\"salesgrowthModel\"> Sales Growth\r\n\t\t\t        </label>\r\n\t\t\t        <label class=\"btn btn-dark\">\r\n\t\t\t          \t<input type=\"radio\" name=\"data_model\" value=\"pricing\" id=\"pricingModel\"> Pricing\r\n\t\t\t        </label>\r\n\t\t\t        <label class=\"btn btn-dark\">\r\n\t\t\t          \t<input type=\"radio\" name=\"data_model\" value=\"ranking\" id=\"rankingModel\"> Ranking\r\n\t\t\t        </label>\r\n\t            </div>\t\r\n            </div>\r\n\t\t</div> \r\n\r\n\t\t<div class=\"pull-left\" style=\"margin-right: 15px;\">\r\n\t\t\t<div id=\"data_type_list\" class=\"dropdown btn-group\">\r\n              \t<button type=\"button\" class=\"btn btn-dark\">Data Type</button>\r\n              \t<button type=\"button\" class=\"btn btn-dark dropdown-toggle\" data-toggle=\"dropdown\" aria-expanded=\"false\">\r\n                \t<span class=\"caret\"></span>\r\n                \t<span class=\"sr-only\">Toggle Dropdown</span>\r\n              \t</button>\r\n              \t<div class=\"btn-group-vertical dropdown-menu\" data-toggle=\"buttons\" role=\"menu\">\r\n              \t\t<label if.bind=\"page_state.model === 'ranking'\" class=\"btn btn-dark active\" repeat.for=\"type of model_state.data_types\">\r\n              \t\t\t<input type=\"checkbox\" name=\"data_type\" value=\"${type}\" checked> ${type}\r\n              \t\t</label>\r\n              \t\t<label if.bind=\"page_state.model !== 'ranking'\" class=\"btn btn-dark\" class.bind=\"$first ? 'active' : ''\" repeat.for=\"type of model_state.data_types\">\r\n              \t\t\t<input type=\"radio\" name=\"data_type\" value=\"${type}\"> ${type}\r\n              \t\t</label>\r\n\t            </div>\t\r\n            </div>\r\n\t\t</div>\r\n\r\n\t\t<div class=\"pull-left\" style=\"margin-right: 15px;\">\r\n\t\t\t<div id=\"filter_list\" class=\"dropdown keep-open btn-group\">\r\n              \t<button type=\"button\" class=\"dLabel btn btn-dark\">Filter</button>\r\n              \t<button type=\"button\" class=\"dToggle btn btn-dark dropdown-toggle\" data-toggle=\"dropdown\" aria-expanded=\"false\">\r\n                \t<span class=\"caret\"></span>\r\n                \t<span class=\"sr-only\">Toggle Dropdown</span>\r\n              \t</button>\r\n              \t<div class=\"btn-group-vertical dropdown-menu\" data-toggle=\"buttons\" role=\"menu\">\r\n              \t\t<label class=\"btn btn-dark\" repeat.for=\"item of model_state.filter_list\">\r\n              \t\t\t<input type=\"checkbox\" name=\"filter_item\" value=\"${item}\"> ${item}\r\n              \t\t</label>\r\n\t            </div>\t\r\n            </div>\r\n\t\t</div>\r\n\r\n\t\t<div show.bind=\"page_state.model !== 'ranking'\" class=\"pull-left\" style=\"margin-right: 15px;\">\r\n\t\t\t<div id=\"compare_entries\" class=\"dropdown keep-open btn-group\">\r\n              \t<button type=\"button\" class=\"dLabel btn btn-dark\">Compare</button>\r\n              \t<button type=\"button\" class=\"dToggle btn btn-dark dropdown-toggle\" data-toggle=\"dropdown\" aria-expanded=\"false\">\r\n                \t<span class=\"caret\"></span>\r\n                \t<span class=\"sr-only\">Toggle Dropdown</span>\r\n              \t</button>\r\n              \t<div class=\"btn-group-vertical dropdown-menu\" data-toggle=\"buttons\" role=\"menu\">\r\n              \t\t<label class=\"btn btn-dark active\">\r\n\t\t\t          \t<input type=\"checkbox\" name=\"industry\" checked> Industry\r\n\t\t\t        </label>\r\n              \t\t<label class=\"btn btn-dark\" repeat.for=\"item of model_state.compare_options\">\r\n              \t\t\t<input type=\"checkbox\" name=\"compare_option\" value=\"${item}\"> ${item}\r\n              \t\t</label>\r\n\t            </div>\t\r\n            </div>\r\n\t\t</div> \r\n\r\n\t\t<div show.bind=\"page_state.model !== 'ranking'\" class=\"pull-left\" style=\"margin-right: 15px;\">\r\n\t\t\t<div class=\"btn-group\" data-toggle=\"buttons\">\r\n\t\t        <label class=\"btn btn-dark active\">\r\n\t\t          \t<input type=\"radio\" name=\"graph_type\" value=\"line\" id=\"lineGraphType\"> Line\r\n\t\t        </label>\r\n\t\t        <label class=\"btn btn-dark\">\r\n\t\t          \t<input type=\"radio\" name=\"graph_type\" value=\"bar\" id=\"barGraphType\"> Bar\r\n\t\t        </label>\r\n\t\t        <label class=\"btn btn-dark\">\r\n\t\t          \t<input type=\"radio\" name=\"graph_type\" value=\"pie\" id=\"pieGraphType\"> Pie\r\n\t\t        </label>\r\n\t\t    </div>\r\n\t\t</div>\r\n\r\n\t\t<div class=\"pull-left\" style=\"margin-right: 15px;\">\r\n\t\t\t<div id=\"time-period-buttons\">\r\n\t\t\t\t<div class=\"btn-group\" data-toggle=\"buttons\">\r\n\t\t\t        <label class=\"btn btn-dark active\">\r\n\t\t\t         \t<input type=\"radio\" name=\"time_frame\" value=\"week\" id=\"weekTimeFrame\"> Week\r\n\t\t\t        </label>\r\n\t\t\t        <label class=\"btn btn-dark\">\r\n\t\t\t          \t<input type=\"radio\" name=\"time_frame\" value=\"month\" id=\"monthTimeFrame\"> Month\r\n\t\t\t        </label>\r\n\t\t\t        <label class=\"btn btn-dark\">\r\n\t\t\t          \t<input type=\"radio\" name=\"time_frame\" value=\"year\" id=\"yearTimeFrame\"> Year\r\n\t\t\t        </label>\r\n\t\t\t    </div>\r\n\t\t\t</div>\r\n\t\t</div>\r\n\t\t<!--div show.bind=\"page_state.model === 'ranking'\" id=\"time-period-dropdown\" class=\"pull-left\" style=\"margin-right: 15px;\">\r\n\t\t\t<div id=\"timePeriodList\" show.bind=\"timePeriodList.length\" class=\"btn-group\">\r\n              \t<button type=\"button\" class=\"btn btn-dark\">Time Period</button>\r\n              \t<button type=\"button\" class=\"btn btn-dark dropdown-toggle\" data-toggle=\"dropdown\" aria-expanded=\"false\">\r\n                \t<span class=\"caret\"></span>\r\n                \t<span class=\"sr-only\">Toggle Dropdown</span>\r\n              \t</button>\r\n              \t<div class=\"btn-group-vertical dropdown-menu\" data-toggle=\"buttons\" role=\"menu\" style=\"max-height: 200px; overflow-y: auto;\">\r\n\t                <label class=\"btn btn-dark\" repeat.for=\"timePeriod of timePeriodList\">\r\n              \t\t\t<input type=\"radio\" name=\"time_period\" value=\"${timePeriod}\"> ${timePeriod}\r\n              \t\t</label>\r\n\t            </div>\t\r\n            </div>\r\n\t\t</div-->\r\n\t\t<div class=\"pull-left\" style=\"margin-right: 15px;\">\r\n\t\t\t<div class=\"btn-group\" data-toggle=\"buttons\">\r\n\t\t        <label class=\"btn btn-dark active\">\r\n\t\t         \t<input type=\"radio\" name=\"display_option\" value=\"current\"> Current Page\r\n\t\t        </label>\r\n\t\t        <label class=\"btn btn-dark\">\r\n\t\t          \t<input type=\"radio\" name=\"display_option\" value=\"all\"> All Pages\r\n\t\t        </label>\r\n\t\t    </div>\r\n\t\t</div>\r\n\t</div>\r\n</template>"; });
@@ -3385,5 +3398,4 @@ define('text!resources/elements/market-view/data-graph-element.html', ['module']
 define('text!resources/elements/market-view/data-table-element.html', ['module'], function(module) { module.exports = "<template>\r\n\t<require from=\"datatables.net-bs/css/dataTables.bootstrap.css\"></require>\r\n\t<div id=\"data-menu-container\" class=\"hidden\"></div>\r\n\t<div id=\"data-table-container\">\r\n\t\t<div id=\"results\" style=\"overflow-x: auto;\">\r\n\t\t\t<table id=\"datatable-responsive\" class=\"table table-striped table-bordered dt-responsive nowrap\" cellspacing=\"0\" width=\"100%\"></table>\r\n\t\t</div>\r\n\t</div>\r\n</template>"; });
 define('text!resources/elements/market-view/import-element.html', ['module'], function(module) { module.exports = "<div class=\"btn-group\" data-toggle=\"buttons\">\r\n    <label class=\"btn btn-dark\">\r\n      \t<input type=\"radio\" name=\"import_btn\" value=\"line\" id=\"lineGraphType\"> Import\r\n    </label>\r\n</div>"; });
 define('text!resources/elements/market-view/pivot-table-element.html', ['module'], function(module) { module.exports = "<template>\r\n\t<require from=\"pivottable/pivot.min.css\"></require>\r\n\t<div id=\"pivot-table-container\">\r\n\t</div>\r\n</template>"; });
-define('text!resources/plugins/palette.html', ['module'], function(module) { module.exports = "<template></template>"; });
 //# sourceMappingURL=app-bundle.js.map

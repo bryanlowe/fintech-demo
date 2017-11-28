@@ -66,10 +66,10 @@ export class DataTableElement {
           $('#data-table-container table').addClass('table-bordered');
           $('#data-table-container table th, #data-table-container table td').css('white-space', 'nowrap');
           $('#data-table-container table th').css('font-size', '10px');
+          this.data_table.column('0:visible').order('asc').draw();
           this.data_table.on('draw', () => {
             this.outputData();
           });
-          this.data_table.column('0:visible').order('asc').draw();
           this.hideExtraColumns();
       }};
       $('#data-menu-container').pivot_display('setup', input);
@@ -97,7 +97,10 @@ export class DataTableElement {
 	attached(){
     // subscribe to data table row changes
     this.subscription = this.binding_engine.propertyObserver(this, 'table_input')
-        .subscribe((new_value, old_value) => this.setupPivot(new_value));
+        .subscribe((new_value, old_value) => {
+          this.setupPivot(new_value);
+          console.log({table_input: new_value});
+        });
     this.subscription = this.binding_engine.propertyObserver(this, 'display_all_rows')
         .subscribe((new_value, old_value) => this.outputData());
   }

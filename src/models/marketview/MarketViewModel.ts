@@ -1,5 +1,5 @@
 import {bindable, bindingMode} from 'aurelia-framework';
-import {DataGraphModel, GraphDataset} from './DataGraphModel';
+import {DataGraphModel} from './DataGraphModel';
 import {DataTableModel} from './DataTableModel';
 import {TimePeriodModel as TimePeriod} from './TimePeriodModel';
 import * as moment from 'moment';
@@ -44,6 +44,15 @@ export abstract class MarketViewModel {
 	 */
 	setTimeFrame(mode: string): void {
 		this.time_frame_mode = mode || 'week';
+	}
+
+	/**
+	 * Updates the model state
+	 * @param {object} state_params
+	 * @return void
+	 */
+	updateModelState() {
+
 	}
 
 	/**
@@ -149,19 +158,21 @@ export abstract class MarketViewModel {
 	 * @return void
 	 */
 	protected createLineGraph(graph_input: any): void {
+		const gd = this.data_graphs.line.getGraphData();
 		let options = {responsive: true, scales: {xAxes: [{ticks: {autoSkip: false}}]}};
 		if (graph_input.graph_data.length > 20) options['legend'] = {display: false};
 		this.data_graphs.line.setGraphOptions(options);
-		this.data_graphs.line.setDataLabels(graph_input.graph_labels);
+		gd.setLabels(graph_input.graph_labels);
 		// Create the graph data
+		gd.resetDataset();
 		for(let i = 0, ii = graph_input.graph_data.length; i < ii; i++){
-			this.data_graphs.line.addDataset(new GraphDataset(
-				false,
-				graph_input.graph_dataset_labels[i],
-				graph_input.graph_data[i],
-				graph_input.colors[i],
-				graph_input.colors[i]
-			));
+			gd.addDataset({
+				fill: false,
+				label: graph_input.graph_dataset_labels[i],
+				data: graph_input.graph_data[i],
+				backgroundColor: graph_input.colors[i],
+				borderColor: graph_input.colors[i]
+			});
 		}
 	}
 
@@ -171,19 +182,21 @@ export abstract class MarketViewModel {
 	 * @return void
 	 */
 	protected createBarGraph(graph_input: any): void {
+		const gd = this.data_graphs.bar.getGraphData();
 		let options = {responsive: true, scales: {yAxes: [{ticks: {beginAtZero: true}}], xAxes: [{ticks: {autoSkip: false}}]}};
 		if (graph_input.graph_data.length > 20) options['legend'] = {display: false};
 		this.data_graphs.bar.setGraphOptions(options);
-		this.data_graphs.bar.setDataLabels(graph_input.graph_labels);
+		gd.setLabels(graph_input.graph_labels);
 		// Create the graph data
+		gd.resetDataset();
 		for(let i = 0, ii = graph_input.graph_data.length; i < ii; i++){
-			this.data_graphs.bar.addDataset(new GraphDataset(
-				false,
-				graph_input.graph_dataset_labels[i],
-				graph_input.graph_data[i],
-				graph_input.colors[i],
-				graph_input.colors[i]
-			));
+			gd.addDataset({
+				fill: false,
+				label: graph_input.graph_dataset_labels[i],
+				data: graph_input.graph_data[i],
+				backgroundColor: graph_input.colors[i],
+				borderColor: graph_input.colors[i]
+			});
 		}
 	}
 
@@ -193,24 +206,24 @@ export abstract class MarketViewModel {
 	 * @return void
 	 */
 	protected createPieGraph(graph_input: any): void {
+		const gd = this.data_graphs.pie.getGraphData();
 		const options = {responsive: true, legend: false};
 		let labels = [],
 			totals = [];
 		this.data_graphs.pie.setGraphOptions(options);
 
 		// Create the graph data
+		gd.resetDataset();
 		for(var i = 0, ii = graph_input.graph_data.length; i < ii; i++){
-		    labels.push(graph_input.graph_data.graph_dataset_labels[i]);
+		    labels.push(graph_input.graph_dataset_labels[i]);
 		    totals.push(graph_input.graph_data[i].reduce((a, b) => { return a + b; }, 0));
 		}
-		this.data_graphs.pie.setDataLabels(labels);
-		this.data_graphs.pie.addDataset(new GraphDataset(
-			false,
-			'',
-			totals,
-			graph_input.colors,
-			''
-		));
+		gd.setLabels(labels);
+		gd.addDataset({
+			fill: false,
+			data: totals,
+			backgroundColor: graph_input.colors
+		});
 	}
 
 	/**
