@@ -66,11 +66,7 @@ export class DataTableElement {
           $('#data-table-container table').addClass('table-bordered');
           $('#data-table-container table th, #data-table-container table td').css('white-space', 'nowrap');
           $('#data-table-container table th').css('font-size', '10px');
-          this.data_table.column('0:visible').order('asc').draw();
-          this.data_table.on('draw', () => {
-            this.outputData();
-          });
-          this.hideExtraColumns();
+          this.drawTable();
       }};
       $('#data-menu-container').pivot_display('setup', input);
       this.spinnerClose();
@@ -81,7 +77,8 @@ export class DataTableElement {
     }
   }
 
-  private hideExtraColumns() {
+  private drawTable() {
+    this.data_table.column('0:visible').order('asc').draw();
     const column_limit = 12;
     const num_of_columns = this.data_table.columns().header().length;
     const filter_num = $('input.row-labelable:checked').length;
@@ -91,6 +88,7 @@ export class DataTableElement {
       this.data_table.columns(this.hidden_columns).visible(false, false);
       this.data_table.columns.adjust().draw(false); // adjust column sizing and redraw
     }
+    this.outputData();
   }
 
 
@@ -99,7 +97,6 @@ export class DataTableElement {
     this.subscription = this.binding_engine.propertyObserver(this, 'table_input')
         .subscribe((new_value, old_value) => {
           this.setupPivot(new_value);
-          console.log({table_input: new_value});
         });
     this.subscription = this.binding_engine.propertyObserver(this, 'display_all_rows')
         .subscribe((new_value, old_value) => this.outputData());

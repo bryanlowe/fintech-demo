@@ -26,7 +26,6 @@ export class DataGraphElement {
       return;
     }
     this.chart.data = this.graph_input.data;
-    console.log(this.chart.data);
     this.chart.update();
   }
 

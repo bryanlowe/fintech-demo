@@ -101,32 +101,26 @@ export class HomeLanding {
 		this.observers.push(this.bindingEngine.propertyObserver(this, 'table_output')
       		.subscribe((newValue, oldValue) => {
       			this.updateDataGraph();
-      			console.log('Update Data Graph from table_output', newValue);
       		}));
 		this.observers.push(this.bindingEngine.propertyObserver(this.page_state, 'graph_type')
       		.subscribe((newValue, oldValue) => {
       			this.updateDataGraph();
-      			console.log('Update Data Graph from graph_type');
       		}));
 		this.observers.push(this.bindingEngine.propertyObserver(this.page_state, 'model')
       		.subscribe((newValue, oldValue) => {
       			this.updateDataTable();
-      			console.log('Update Data Table from model');
       		}));
 		this.observers.push(this.bindingEngine.propertyObserver(this.page_state, 'time_frame')
       		.subscribe((newValue, oldValue) => {
       			this.updateDataTable();
-      			console.log('Update Data Table from time_frame');
       		}));	
 		this.observers.push(this.bindingEngine.propertyObserver(this.page_state, 'compare_list')
       		.subscribe((newValue, oldValue) => {
-      			//this.updateDataTable();
-      			console.log('Update Data Table from compare_list');
+      			this.updateDataTable();
       		}));
 		this.observers.push(this.bindingEngine.propertyObserver(this.page_state, 'exclude_industry')
       		.subscribe((newValue, oldValue) => {
       			this.updateDataTable();
-      			console.log('Update Data Table from exclude_industry');
       		}));
 	}
 

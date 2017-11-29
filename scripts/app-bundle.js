@@ -952,31 +952,26 @@ define('pages/home/components/index',["require", "exports", "aurelia-fetch-clien
             this.observers.push(this.bindingEngine.propertyObserver(this, 'table_output')
                 .subscribe(function (newValue, oldValue) {
                 _this.updateDataGraph();
-                console.log('Update Data Graph from table_output', newValue);
             }));
             this.observers.push(this.bindingEngine.propertyObserver(this.page_state, 'graph_type')
                 .subscribe(function (newValue, oldValue) {
                 _this.updateDataGraph();
-                console.log('Update Data Graph from graph_type');
             }));
             this.observers.push(this.bindingEngine.propertyObserver(this.page_state, 'model')
                 .subscribe(function (newValue, oldValue) {
                 _this.updateDataTable();
-                console.log('Update Data Table from model');
             }));
             this.observers.push(this.bindingEngine.propertyObserver(this.page_state, 'time_frame')
                 .subscribe(function (newValue, oldValue) {
                 _this.updateDataTable();
-                console.log('Update Data Table from time_frame');
             }));
             this.observers.push(this.bindingEngine.propertyObserver(this.page_state, 'compare_list')
                 .subscribe(function (newValue, oldValue) {
-                console.log('Update Data Table from compare_list');
+                _this.updateDataTable();
             }));
             this.observers.push(this.bindingEngine.propertyObserver(this.page_state, 'exclude_industry')
                 .subscribe(function (newValue, oldValue) {
                 _this.updateDataTable();
-                console.log('Update Data Table from exclude_industry');
             }));
         };
         HomeLanding.prototype.attached = function () {
@@ -1247,7 +1242,6 @@ define('resources/elements/market-view/data-graph-element',["require", "exports"
                 return;
             }
             this.chart.data = this.graph_input.data;
-            console.log(this.chart.data);
             this.chart.update();
         };
         DataGraphElement.prototype.createNewChart = function () {
@@ -1352,11 +1346,7 @@ define('resources/elements/market-view/data-table-element',["require", "exports"
                         $('#data-table-container table').addClass('table-bordered');
                         $('#data-table-container table th, #data-table-container table td').css('white-space', 'nowrap');
                         $('#data-table-container table th').css('font-size', '10px');
-                        _this.data_table.column('0:visible').order('asc').draw();
-                        _this.data_table.on('draw', function () {
-                            _this.outputData();
-                        });
-                        _this.hideExtraColumns();
+                        _this.drawTable();
                     } };
                 $('#data-menu-container').pivot_display('setup', input);
                 this.spinnerClose();
@@ -1367,7 +1357,8 @@ define('resources/elements/market-view/data-table-element',["require", "exports"
                 }, 100);
             }
         };
-        DataTableElement.prototype.hideExtraColumns = function () {
+        DataTableElement.prototype.drawTable = function () {
+            this.data_table.column('0:visible').order('asc').draw();
             var column_limit = 12;
             var num_of_columns = this.data_table.columns().header().length;
             var filter_num = $('input.row-labelable:checked').length;
@@ -1377,13 +1368,13 @@ define('resources/elements/market-view/data-table-element',["require", "exports"
                 this.data_table.columns(this.hidden_columns).visible(false, false);
                 this.data_table.columns.adjust().draw(false);
             }
+            this.outputData();
         };
         DataTableElement.prototype.attached = function () {
             var _this = this;
             this.subscription = this.binding_engine.propertyObserver(this, 'table_input')
                 .subscribe(function (new_value, old_value) {
                 _this.setupPivot(new_value);
-                console.log({ table_input: new_value });
             });
             this.subscription = this.binding_engine.propertyObserver(this, 'display_all_rows')
                 .subscribe(function (new_value, old_value) { return _this.outputData(); });
