@@ -80,20 +80,21 @@ export abstract class MarketViewModel {
 		};
 	}
 
-	protected initializeState() {
-		const sample_dataset = this.model_data[0].dataset;
-		for (let i = 0, ii = sample_dataset.length; i < ii; i++) {
-			// initialize compare options
-			if (this.compare_options.indexOf(sample_dataset[i].brand) === -1) this.compare_options.push(sample_dataset[i].brand);
+	/**
+	 * Initializes state params that are used to analyze the data
+	 * @param any[] sample_product
+	 * @return void
+	 */
+	protected initializeState(sample_product: any[] = []): void {
+		// initialize compare options
+		this.compare_options = this.model_data.map((obj) => {
+			if (this.compare_options.indexOf(obj.brand) === -1) 
+				return obj.brand;
+		});
 
-			// initialize filter options
-			if (!this.filter_list.length) {
-				const product = sample_dataset[i].product;
-				for(let j = 0, jj = product.length; j < jj; j++) {
-		        	this.filter_list.push(product[j].spec_type);
-			  	}
-			}
-		}
+		// initialize filter options
+		if (!this.filter_list.length) 
+			this.filter_list = sample_product.map((obj) => obj.spec_type);
 	}
 
 	/**
@@ -103,16 +104,14 @@ export abstract class MarketViewModel {
 	updateDataTable(): any {
 		// Create the dataArray
 		const totals = this.getTotals();
-		this.initializeState();
-		
-		let data_array = this.model_data.map((obj) => {
-			return obj.dataset;
-	  	});
-	  	data_array = [].concat.apply([], data_array);
 
-	  	let product = data_array[0].product;
+	  	let data_array = [].concat.apply([], this.model_data.map((obj) => obj.dataset));
+	  	const sample_product = data_array[0].product;
+
+	  	this.initializeState(sample_product);
+	  	this.fieldDefinitions(sample_product);
+	  	
 	  	data_array = this.pivotData(data_array, totals);
-	  	this.fieldDefinitions(product);
 	  	data_array.sort(this.sortDataArray);
 
 	  	if (this.exclude_industry) data_array = data_array.filter((item) => item[0] !== 'Industry');

@@ -166,11 +166,20 @@ define('models/marketview/TimePeriodModel',["require", "exports", "moment"], fun
         TimePeriodModel.prototype.addWeek = function (week) {
             this.week.add(week);
         };
+        TimePeriodModel.prototype.getWeek = function () {
+            return this.week;
+        };
         TimePeriodModel.prototype.addMonth = function (month) {
             this.month.add(moment(new Date(month)).startOf('month').format('MMMM DD YYYY') + ' - ' + moment(new Date(month)).endOf('month').format('MMMM DD YYYY'));
         };
+        TimePeriodModel.prototype.getMonth = function () {
+            return this.month;
+        };
         TimePeriodModel.prototype.addYear = function (year) {
             this.year.add(moment('Jan 1 ' + year).startOf('year').format('MMMM DD YYYY') + ' - ' + moment('Dec 31 ' + year).endOf('year').format('MMMM DD YYYY'));
+        };
+        TimePeriodModel.prototype.getYear = function () {
+            return this.year;
         };
         TimePeriodModel.prototype.useStartDate = function () {
             this.time_mode = TimePeriodModel.START_DATE;
@@ -249,29 +258,23 @@ define('models/marketview/MarketViewModel',["require", "exports", "./DataGraphMo
                 compare_list: this.compare_list
             };
         };
-        MarketViewModel.prototype.initializeState = function () {
-            var sample_dataset = this.model_data[0].dataset;
-            for (var i = 0, ii = sample_dataset.length; i < ii; i++) {
-                if (this.compare_options.indexOf(sample_dataset[i].brand) === -1)
-                    this.compare_options.push(sample_dataset[i].brand);
-                if (!this.filter_list.length) {
-                    var product = sample_dataset[i].product;
-                    for (var j = 0, jj = product.length; j < jj; j++) {
-                        this.filter_list.push(product[j].spec_type);
-                    }
-                }
-            }
+        MarketViewModel.prototype.initializeState = function (sample_product) {
+            var _this = this;
+            if (sample_product === void 0) { sample_product = []; }
+            this.compare_options = this.model_data.map(function (obj) {
+                if (_this.compare_options.indexOf(obj.brand) === -1)
+                    return obj.brand;
+            });
+            if (!this.filter_list.length)
+                this.filter_list = sample_product.map(function (obj) { return obj.spec_type; });
         };
         MarketViewModel.prototype.updateDataTable = function () {
             var totals = this.getTotals();
-            this.initializeState();
-            var data_array = this.model_data.map(function (obj) {
-                return obj.dataset;
-            });
-            data_array = [].concat.apply([], data_array);
-            var product = data_array[0].product;
+            var data_array = [].concat.apply([], this.model_data.map(function (obj) { return obj.dataset; }));
+            var sample_product = data_array[0].product;
+            this.initializeState(sample_product);
+            this.fieldDefinitions(sample_product);
             data_array = this.pivotData(data_array, totals);
-            this.fieldDefinitions(product);
             data_array.sort(this.sortDataArray);
             if (this.exclude_industry)
                 data_array = data_array.filter(function (item) { return item[0] !== 'Industry'; });
@@ -542,29 +545,26 @@ define('models/marketview/RankingModel',["require", "exports", "./MarketViewMode
         __extends(RankingModel, _super);
         function RankingModel() {
             var _this = _super.call(this) || this;
-            _this.time_frame = new TimePeriodModel_1.TimePeriodModel();
+            _this.time_period = new TimePeriodModel_1.TimePeriodModel();
             _this.data_types = ['Revenue Sales', 'Revenue Change', 'Unit Sales', 'Unit Change'];
             return _this;
         }
+        RankingModel.prototype.initializeState = function (sample_dataset, sample_product) {
+            if (sample_product === void 0) { sample_product = []; }
+            _super.prototype.initializeState.call(this, sample_product);
+            for (var i = 0, ii = sample_dataset.length; i < ii; i++) {
+                this.time_period.addWeek(sample_dataset[i].time_period.week_start + ' - ' + sample_dataset[i].time_period.week_end);
+                this.time_period.addMonth(sample_dataset[i].time_period.month_start);
+                this.time_period.addYear(sample_dataset[i].time_period.year_start);
+            }
+        };
         RankingModel.prototype.updateDataTable = function () {
-            var _this = this;
             var totals = this.getTotals();
-            this.initializeState();
-            var data_array = this.model_data.map(function (obj) {
-                var result = obj.dataset;
-                for (var i = 0, ii = result.length; i < ii; i++) {
-                    if (_this.compare_options.indexOf(result[i].brand) === -1)
-                        _this.compare_options.push(result[i].brand);
-                    _this.time_frame.addWeek(result[i].time_period.week_start + ' - ' + result[i].time_period.week_end);
-                    _this.time_frame.addMonth(result[i].time_period.month_start);
-                    _this.time_frame.addYear(result[i].time_period.year_start);
-                }
-                return result;
-            });
-            data_array = [].concat.apply([], data_array);
-            var product = data_array[0].product;
+            var data_array = [].concat.apply([], this.model_data.map(function (obj) { return obj.dataset; }));
+            var sample_product = data_array[0].product;
+            this.initializeState(data_array, sample_product);
+            this.fieldDefinitions(sample_product);
             data_array = this.pivotData(data_array, totals);
-            this.fieldDefinitions(product);
             if (this.exclude_industry)
                 data_array = data_array.filter(function (item) { return item[2] !== 'Industry'; });
             this.data_table.setTableData([this.data_table.getTableInput().columnLabels].concat(data_array));
@@ -622,7 +622,7 @@ define('models/marketview/RankingModel',["require", "exports", "./MarketViewMode
             return data;
         };
         RankingModel.prototype.getTimePeriod = function () {
-            return this.time_frame;
+            return this.time_period;
         };
         return RankingModel;
     }(MarketViewModel_1.MarketViewModel));
@@ -1136,6 +1136,7 @@ define('resources/elements/market-view/data-control-element',["require", "export
                     include.push($(element).val());
             });
             this.page_state.compare_list = include;
+            this.resetButtons();
         };
         DataControlElement.prototype.initDataTypes = function () {
             $('input[type="radio"][name="data_type"], input[type="checkbox"][name="data_type"]').unbind('change');

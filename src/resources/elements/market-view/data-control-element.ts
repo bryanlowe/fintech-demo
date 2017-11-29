@@ -78,6 +78,7 @@ export class DataControlElement {
       if ($(element).is(':checked')) include.push($(element).val());
     });
     this.page_state.compare_list = include;
+    this.resetButtons();
   }
 
   initDataTypes() {

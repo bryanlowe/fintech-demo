@@ -20,6 +20,14 @@ export class TimePeriodModel {
 	}
 
 	/**
+	 * Retrieves the week set
+	 * @return any
+	 */
+	getWeek(): any {
+		return this.week;
+	}
+
+	/**
 	 * Adds a month to the month set
 	 * @param string month
 	 * @return void
@@ -28,6 +36,13 @@ export class TimePeriodModel {
 		this.month.add(moment(new Date(month)).startOf('month').format('MMMM DD YYYY') + ' - ' + moment(new Date(month)).endOf('month').format('MMMM DD YYYY'))
 	}
 
+	/**
+	 * Retrieves the month set
+	 * @return any
+	 */
+	getMonth(): any {
+		return this.month;
+	}
 
 	/**
 	 * Adds a year to the year set
@@ -36,6 +51,14 @@ export class TimePeriodModel {
 	 */
 	addYear(year: string): void {
 		this.year.add(moment('Jan 1 ' + year).startOf('year').format('MMMM DD YYYY') + ' - ' + moment('Dec 31 ' + year).endOf('year').format('MMMM DD YYYY'))
+	}
+
+	/**
+	 * Retrieves the year set
+	 * @return any
+	 */
+	getYear(): any {
+		return this.year;
 	}
 
 	/**

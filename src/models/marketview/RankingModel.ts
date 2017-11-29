@@ -3,11 +3,28 @@ import {MarketViewModel as MarketView} from './MarketViewModel';
 import {TimePeriodModel as TimePeriod} from './TimePeriodModel';
 
 export class RankingModel extends MarketView {
-	protected time_frame: TimePeriod = new TimePeriod();
+	protected time_period: TimePeriod = new TimePeriod();
 
 	constructor() {
 		super();
 		this.data_types = ['Revenue Sales', 'Revenue Change', 'Unit Sales', 'Unit Change'];
+	}
+
+	/**
+	 * Initializes state params that are used to analyze the data
+	 * @param any[] sample_dataset
+	 * @param any[] sample_product
+	 * @return void
+	 */
+	protected initializeState(sample_dataset: any[], sample_product: any[] = []): void {
+		super.initializeState(sample_product);
+		for (let i = 0, ii = sample_dataset.length; i < ii; i++) {
+			// initialize time period options
+			this.time_period.addWeek(sample_dataset[i].time_period.week_start + ' - ' + sample_dataset[i].time_period.week_end);
+	    	this.time_period.addMonth(sample_dataset[i].time_period.month_start);
+	    	this.time_period.addYear(sample_dataset[i].time_period.year_start);
+		}
+		//console.log({weeks: this.time_period.getWeek().values(), months: this.time_period.getMonth().values(), years: this.time_period.getYear().values()});
 	}
 
 	/**
@@ -16,27 +33,15 @@ export class RankingModel extends MarketView {
 	updateDataTable(): void {
 		// Create the dataArray
 		const totals = this.getTotals();
-		this.initializeState()
 
-	  	let data_array = this.model_data.map((obj) => {
-			const result = obj.dataset;
+	  	let data_array = [].concat.apply([], this.model_data.map((obj) => obj.dataset));
+	  	const sample_product = data_array[0].product;
 
-			// initialize compare options
-			for (let i = 0, ii = result.length; i < ii; i++) {
-				if (this.compare_options.indexOf(result[i].brand) === -1) this.compare_options.push(result[i].brand);
-				this.time_frame.addWeek(result[i].time_period.week_start + ' - ' + result[i].time_period.week_end);
-		    	this.time_frame.addMonth(result[i].time_period.month_start);
-		    	this.time_frame.addYear(result[i].time_period.year_start);
-			}
+	  	this.initializeState(data_array, sample_product);
+	  	this.fieldDefinitions(sample_product);
 
-	    	return result;
-	  	});
-	  	data_array = [].concat.apply([], data_array);
-
-	  	let product = data_array[0].product;
 	  	data_array = this.pivotData(data_array, totals);
-	  	this.fieldDefinitions(product);
-
+	  	
 	  	if (this.exclude_industry) data_array = data_array.filter((item) => item[2] !== 'Industry');
        
 	  	this.data_table.setTableData([this.data_table.getTableInput().columnLabels].concat(data_array));
@@ -139,6 +144,6 @@ export class RankingModel extends MarketView {
 	 * @return TimePeriod object
 	 */
 	getTimePeriod() {
-		return this.time_frame;
+		return this.time_period;
 	}
 }
