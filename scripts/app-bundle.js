@@ -132,7 +132,8 @@ define('models/marketview/DataTableModel',["require", "exports"], function (requ
             this.table_row_labels = table_row_labels || [];
         };
         DataTableModel.prototype.setTableColumnLabels = function (table_column_labels) {
-            this.table_column_labels = table_column_labels || [];
+            if (table_column_labels === void 0) { table_column_labels = []; }
+            this.table_column_labels = table_column_labels;
         };
         DataTableModel.prototype.setTableSummaries = function (table_summaries) {
             this.table_summaries = table_summaries || [];
@@ -167,25 +168,28 @@ define('models/marketview/TimePeriodModel',["require", "exports", "moment"], fun
             this.week.add(week);
         };
         TimePeriodModel.prototype.getWeek = function () {
-            return this.week;
+            return Array.from(this.week);
         };
         TimePeriodModel.prototype.addMonth = function (month) {
             this.month.add(moment(new Date(month)).startOf('month').format('MMMM DD YYYY') + ' - ' + moment(new Date(month)).endOf('month').format('MMMM DD YYYY'));
         };
         TimePeriodModel.prototype.getMonth = function () {
-            return this.month;
+            return Array.from(this.month);
         };
         TimePeriodModel.prototype.addYear = function (year) {
             this.year.add(moment('Jan 1 ' + year).startOf('year').format('MMMM DD YYYY') + ' - ' + moment('Dec 31 ' + year).endOf('year').format('MMMM DD YYYY'));
         };
         TimePeriodModel.prototype.getYear = function () {
-            return this.year;
+            return Array.from(this.year);
         };
         TimePeriodModel.prototype.useStartDate = function () {
             this.time_mode = TimePeriodModel.START_DATE;
         };
         TimePeriodModel.prototype.useEndDate = function () {
             this.time_mode = TimePeriodModel.END_DATE;
+        };
+        TimePeriodModel.prototype.getTimeMode = function () {
+            return this.time_mode;
         };
         TimePeriodModel.prototype.setTimePeriod = function (start, end, current_mode) {
             if (current_mode === void 0) { current_mode = true; }
@@ -205,8 +209,10 @@ define('models/marketview/TimePeriodModel',["require", "exports", "moment"], fun
         function TimeFrame() {
         }
         TimeFrame.prototype.set = function (start, end) {
-            this.start = new Date(start) || null;
-            this.end = new Date(end) || null;
+            if (start === void 0) { start = null; }
+            if (end === void 0) { end = null; }
+            this.start = start ? new Date(start) : null;
+            this.end = end ? new Date(end) : null;
         };
         TimeFrame.prototype.get = function () {
             return {
@@ -258,13 +264,14 @@ define('models/marketview/MarketViewModel',["require", "exports", "./DataGraphMo
                 compare_list: this.compare_list
             };
         };
-        MarketViewModel.prototype.initializeState = function (sample_product) {
-            var _this = this;
+        MarketViewModel.prototype.initializeState = function (sample_dataset, sample_product) {
             if (sample_product === void 0) { sample_product = []; }
-            this.compare_options = this.model_data.map(function (obj) {
-                if (_this.compare_options.indexOf(obj.brand) === -1)
-                    return obj.brand;
-            });
+            if (!this.compare_list.length) {
+                for (var i = 0, ii = sample_dataset.length; i < ii; i++) {
+                    if (this.compare_options.indexOf(sample_dataset[i].brand) === -1)
+                        this.compare_options.push(sample_dataset[i].brand);
+                }
+            }
             if (!this.filter_list.length)
                 this.filter_list = sample_product.map(function (obj) { return obj.spec_type; });
         };
@@ -272,7 +279,7 @@ define('models/marketview/MarketViewModel',["require", "exports", "./DataGraphMo
             var totals = this.getTotals();
             var data_array = [].concat.apply([], this.model_data.map(function (obj) { return obj.dataset; }));
             var sample_product = data_array[0].product;
-            this.initializeState(sample_product);
+            this.initializeState(data_array, sample_product);
             this.fieldDefinitions(sample_product);
             data_array = this.pivotData(data_array, totals);
             data_array.sort(this.sortDataArray);
@@ -538,7 +545,7 @@ var __extends = (this && this.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-define('models/marketview/RankingModel',["require", "exports", "./MarketViewModel", "./TimePeriodModel"], function (require, exports, MarketViewModel_1, TimePeriodModel_1) {
+define('models/marketview/RankingModel',["require", "exports", "./MarketViewModel", "./TimePeriodModel", "moment"], function (require, exports, MarketViewModel_1, TimePeriodModel_1, moment) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var RankingModel = (function (_super) {
@@ -549,28 +556,48 @@ define('models/marketview/RankingModel',["require", "exports", "./MarketViewMode
             _this.data_types = ['Revenue Sales', 'Revenue Change', 'Unit Sales', 'Unit Change'];
             return _this;
         }
+        RankingModel.prototype.getModelState = function () {
+            return Object.assign({ time_period: this.time_period }, _super.prototype.getModelState.call(this));
+        };
         RankingModel.prototype.initializeState = function (sample_dataset, sample_product) {
             if (sample_product === void 0) { sample_product = []; }
-            _super.prototype.initializeState.call(this, sample_product);
+            _super.prototype.initializeState.call(this, sample_dataset, sample_product);
+            var current_time_set = this.time_period.getTimePeriod().period_start ? true : false;
             for (var i = 0, ii = sample_dataset.length; i < ii; i++) {
                 this.time_period.addWeek(sample_dataset[i].time_period.week_start + ' - ' + sample_dataset[i].time_period.week_end);
                 this.time_period.addMonth(sample_dataset[i].time_period.month_start);
                 this.time_period.addYear(sample_dataset[i].time_period.year_start);
+                if (!current_time_set) {
+                    switch (this.time_frame_mode) {
+                        case 'month':
+                            var month = sample_dataset[i].time_period.month_start;
+                            this.time_period.setTimePeriod(moment(new Date(month)).startOf('month').format('MMMM DD YYYY'), moment(new Date(month)).endOf('month').format('MMMM DD YYYY'));
+                            break;
+                        case 'year':
+                            var year = sample_dataset[i].time_period.year_start;
+                            this.time_period.setTimePeriod(moment('Jan 1 ' + year).startOf('year').format('MMMM DD YYYY'), moment('Dec 31 ' + year).endOf('year').format('MMMM DD YYYY'));
+                            break;
+                        default:
+                            this.time_period.setTimePeriod(sample_dataset[i].time_period.week_start, sample_dataset[i].time_period.week_end);
+                            break;
+                    }
+                    current_time_set = true;
+                }
             }
         };
         RankingModel.prototype.updateDataTable = function () {
-            var totals = this.getTotals();
             var data_array = [].concat.apply([], this.model_data.map(function (obj) { return obj.dataset; }));
             var sample_product = data_array[0].product;
             this.initializeState(data_array, sample_product);
             this.fieldDefinitions(sample_product);
-            data_array = this.pivotData(data_array, totals);
+            data_array = this.pivotData(data_array);
             if (this.exclude_industry)
                 data_array = data_array.filter(function (item) { return item[2] !== 'Industry'; });
             this.data_table.setTableData([this.data_table.getTableInput().columnLabels].concat(data_array));
-            this.data_table.setTableColumnLabels([]);
+            this.data_table.setTableColumnLabels();
             this.data_table.setTableRowLabels(['Revenue Rank', 'Unit Rank', 'Brand']);
             this.data_table.setTableSummaries(['Revenue Sales', 'Revenue Change', 'Unit Sales', 'Unit Change']);
+            return this.data_table.getTableInput();
         };
         RankingModel.prototype.fieldDefinitions = function (product) {
             var _this = this;
@@ -583,10 +610,13 @@ define('models/marketview/RankingModel',["require", "exports", "./MarketViewMode
                 { name: 'Revenue Sales', type: 'float', filterable: false, rowLabelable: false, summarizable: 'sum', displayFunction: function (value) { return '$' + _this.formatDataValue(value); } },
                 { name: 'Revenue Change', type: 'float', rowLabelable: false, summarizable: 'sum', displayFunction: function (value) { return value.toFixed(2) + '%'; } }
             ];
-            var columns = ['Brand'];
-            columns[columns.length] = 'Date';
-            columns[columns.length] = 'Units';
-            columns[columns.length] = 'Revenue';
+            var columns = ['Revenue Rank'];
+            columns[columns.length] = 'Unit Rank';
+            columns[columns.length] = 'Brand';
+            columns[columns.length] = 'Unit Sales';
+            columns[columns.length] = 'Unit Change';
+            columns[columns.length] = 'Revenue Sales';
+            columns[columns.length] = 'Revenue Change';
             for (var i = 0, ii = product.length; i < ii; i++) {
                 columns[columns.length] = product[i].spec_type;
                 field_definitions.push({ name: product[i].spec_type, type: 'string', filterable: true });
@@ -597,14 +627,17 @@ define('models/marketview/RankingModel',["require", "exports", "./MarketViewMode
         RankingModel.prototype.pivotData = function (data, totals) {
             var _this = this;
             if (totals === void 0) { totals = {}; }
-            data = data.map(function (obj, index, arr) {
+            var previous = this.time_period.getTimePeriod(false);
+            var current_time_period = this.time_frame_mode !== 'week' ? this.compressData(this.filterByTimePeriod(data, true)) : this.filterByTimePeriod(data, true);
+            var previous_time_period = this.time_frame_mode !== 'week' ? this.compressData(this.filterByTimePeriod(data, true, false)) : this.filterByTimePeriod(data, true, false);
+            data = current_time_period.map(function (obj, index) {
                 var result = [];
                 result[result.length] = _this.filterByCompareList(obj.brand, 'Industry');
                 result[result.length] = obj.units;
-                var unitGrowth = index ? ((arr[index].units - arr[index - 1].units) / arr[index - 1].units) * 100 : 0;
+                var unitGrowth = index && previous.period_start ? ((current_time_period[index].units - previous_time_period[index].units) / previous_time_period[index].units) * 100 : 0;
                 result[result.length] = isFinite(unitGrowth) ? unitGrowth : isNaN(unitGrowth) ? 0 : 100;
                 result[result.length] = obj.revenue;
-                var revenueGrowth = index ? ((arr[index].revenue - arr[index - 1].revenue) / arr[index - 1].revenue) * 100 : 0;
+                var revenueGrowth = index && previous.period_start ? ((current_time_period[index].revenue - previous_time_period[index].revenue) / previous_time_period[index].revenue) * 100 : 0;
                 result[result.length] = isFinite(revenueGrowth) ? revenueGrowth : isNaN(revenueGrowth) ? 0 : 100;
                 for (var i = 0, ii = obj.product.length; i < ii; i++) {
                     result[result.length] = obj.product[i].spec_value;
@@ -620,6 +653,82 @@ define('models/marketview/RankingModel',["require", "exports", "./MarketViewMode
                 data[i].unshift(i + 1);
             }
             return data;
+        };
+        RankingModel.prototype.sortDataArray = function (a, b) {
+            var brandA = a[0].toLowerCase();
+            var brandB = b[0].toLowerCase();
+            var dateA = (new Date(a[1])).getTime();
+            var dateB = (new Date(b[1])).getTime();
+            if (brandA === brandB) {
+                return dateA - dateB;
+            }
+            return brandA > brandB ? 1 : -1;
+        };
+        RankingModel.prototype.filterByTimePeriod = function (data, filter, current_time) {
+            var _this = this;
+            if (filter === void 0) { filter = false; }
+            if (current_time === void 0) { current_time = true; }
+            var time_mode = this.time_period.getTimeMode();
+            return data.filter(function (obj) {
+                var period_start, period_end;
+                switch (_this.time_frame_mode) {
+                    case 'month':
+                        var month = time_mode ? obj.time_period.month_start : obj.time_period.month_end;
+                        period_start = moment(new Date(month)).startOf('month').format('MMMM DD YYYY');
+                        period_end = moment(new Date(month)).endOf('month').format('MMMM DD YYYY');
+                        break;
+                    case 'year':
+                        var year = time_mode ? obj.time_period.year_start : obj.time_period.year_end;
+                        period_start = moment('Jan 1 ' + year).startOf('year').format('MMMM DD YYYY');
+                        period_end = moment('Dec 31 ' + year).endOf('year').format('MMMM DD YYYY');
+                        break;
+                    default:
+                        period_start = obj.time_period.week_start;
+                        period_end = obj.time_period.week_end;
+                        break;
+                }
+                return _this.validTimeFrame(period_start, period_end, filter, current_time) ? obj : null;
+            });
+        };
+        RankingModel.prototype.validTimeFrame = function (period_start, period_end, filter, current_time) {
+            if (filter === void 0) { filter = false; }
+            if (current_time === void 0) { current_time = true; }
+            var current = this.time_period.getTimePeriod();
+            var previous = this.time_period.getTimePeriod(false);
+            var result = false;
+            var test_period_start = new Date(period_start);
+            var test_period_end = new Date(period_end);
+            if (filter) {
+                if (current_time) {
+                    return (current.period_start >= test_period_start && current.period_end <= test_period_end);
+                }
+                else {
+                    return (previous.period_start >= test_period_start && previous.period_end <= test_period_end);
+                }
+            }
+            if (current.period_start >= test_period_start && current.period_end <= test_period_end)
+                result = true;
+            if (previous.period_start >= test_period_start && previous.period_end <= test_period_end)
+                result = true;
+            return result;
+        };
+        RankingModel.prototype.compressData = function (dataset) {
+            var result = {};
+            for (var i = 0, ii = dataset.length; i < ii; i++) {
+                var label = [dataset[i].brand];
+                for (var j = 0, product = dataset[i].product, jj = product.length; j < jj; j++) {
+                    label.push(product[j].spec_value);
+                }
+                label = label.join('|::|');
+                if (result.hasOwnProperty(label)) {
+                    result[label].units += dataset[i].units;
+                    result[label].revenue += dataset[i].revenue;
+                }
+                else {
+                    result[label] = Object.assign({}, dataset[i]);
+                }
+            }
+            return Object.values(result);
         };
         RankingModel.prototype.getTimePeriod = function () {
             return this.time_period;
@@ -888,11 +997,13 @@ define('pages/home/components/index',["require", "exports", "aurelia-fetch-clien
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var HomeLanding = (function () {
-        function HomeLanding(httpClient, bindingEngine, events) {
-            this.httpClient = httpClient;
-            this.bindingEngine = bindingEngine;
+        function HomeLanding(http_client, binding_engine, events) {
+            this.http_client = http_client;
+            this.binding_engine = binding_engine;
             this.events = events;
             this.display_all_rows = false;
+            this.data_refresh = false;
+            this.graph_refresh = false;
             this.observers = [];
             this.page_state = {
                 model: 'brandshare',
@@ -907,7 +1018,7 @@ define('pages/home/components/index',["require", "exports", "aurelia-fetch-clien
                 salesgrowth: new index_1.SalesGrowth(),
                 ranking: new index_1.Ranking()
             };
-            this.httpClient = httpClient.configure(function (config) {
+            this.http_client = http_client.configure(function (config) {
                 config
                     .useStandardConfiguration()
                     .withBaseUrl('/');
@@ -921,8 +1032,8 @@ define('pages/home/components/index',["require", "exports", "aurelia-fetch-clien
         HomeLanding.prototype.updateDataTable = function () {
             if (this.model_data) {
                 this.updateModelProperties();
-                this.model_state = this.model_list[this.page_state.model].getModelState();
                 this.table_input = this.model_list[this.page_state.model].updateDataTable();
+                this.model_state = this.model_list[this.page_state.model].getModelState();
             }
         };
         HomeLanding.prototype.updateDataGraph = function () {
@@ -940,7 +1051,7 @@ define('pages/home/components/index',["require", "exports", "aurelia-fetch-clien
             var _this = this;
             var _class = this;
             this.spinnerOpen();
-            return this.httpClient.fetch('marketview/data')
+            return this.http_client.fetch('marketview/data')
                 .then(function (response) { return response.json(); })
                 .then(function (data) { _class.model_data = data; })
                 .then(function () {
@@ -949,29 +1060,19 @@ define('pages/home/components/index',["require", "exports", "aurelia-fetch-clien
         };
         HomeLanding.prototype.setObservers = function () {
             var _this = this;
-            this.observers.push(this.bindingEngine.propertyObserver(this, 'table_output')
-                .subscribe(function (newValue, oldValue) {
-                _this.updateDataGraph();
+            this.observers.push(this.binding_engine.propertyObserver(this, 'data_refresh')
+                .subscribe(function (new_value, old_value) {
+                if (_this.data_refresh) {
+                    _this.updateDataTable();
+                    _this.data_refresh = false;
+                }
             }));
-            this.observers.push(this.bindingEngine.propertyObserver(this.page_state, 'graph_type')
-                .subscribe(function (newValue, oldValue) {
-                _this.updateDataGraph();
-            }));
-            this.observers.push(this.bindingEngine.propertyObserver(this.page_state, 'model')
-                .subscribe(function (newValue, oldValue) {
-                _this.updateDataTable();
-            }));
-            this.observers.push(this.bindingEngine.propertyObserver(this.page_state, 'time_frame')
-                .subscribe(function (newValue, oldValue) {
-                _this.updateDataTable();
-            }));
-            this.observers.push(this.bindingEngine.propertyObserver(this.page_state, 'compare_list')
-                .subscribe(function (newValue, oldValue) {
-                _this.updateDataTable();
-            }));
-            this.observers.push(this.bindingEngine.propertyObserver(this.page_state, 'exclude_industry')
-                .subscribe(function (newValue, oldValue) {
-                _this.updateDataTable();
+            this.observers.push(this.binding_engine.propertyObserver(this, 'graph_refresh')
+                .subscribe(function (new_value, old_value) {
+                if (_this.graph_refresh) {
+                    _this.updateDataGraph();
+                    _this.graph_refresh = false;
+                }
             }));
         };
         HomeLanding.prototype.attached = function () {
@@ -1003,6 +1104,14 @@ define('pages/home/components/index',["require", "exports", "aurelia-fetch-clien
             aurelia_framework_1.bindable({ defaultBindingMode: aurelia_framework_1.bindingMode.twoWay }),
             __metadata("design:type", Boolean)
         ], HomeLanding.prototype, "display_all_rows", void 0);
+        __decorate([
+            aurelia_framework_1.bindable({ defaultBindingMode: aurelia_framework_1.bindingMode.twoWay }),
+            __metadata("design:type", Boolean)
+        ], HomeLanding.prototype, "data_refresh", void 0);
+        __decorate([
+            aurelia_framework_1.bindable({ defaultBindingMode: aurelia_framework_1.bindingMode.twoWay }),
+            __metadata("design:type", Boolean)
+        ], HomeLanding.prototype, "graph_refresh", void 0);
         __decorate([
             aurelia_framework_1.bindable,
             __metadata("design:type", Object)
@@ -1080,11 +1189,12 @@ define('resources/elements/market-view/data-control-element',["require", "export
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var DataControlElement = (function () {
-        function DataControlElement(bindingEngine, events, taskQueue) {
-            this.bindingEngine = bindingEngine;
+        function DataControlElement(binding_engine, events) {
+            this.binding_engine = binding_engine;
             this.events = events;
-            this.taskQueue = taskQueue;
             this.display_all_rows = false;
+            this.data_refresh = false;
+            this.graph_refresh = false;
             this.observers = [];
             this.mutation_observers = [];
         }
@@ -1094,11 +1204,17 @@ define('resources/elements/market-view/data-control-element',["require", "export
                 var _jqThis = event.currentTarget;
                 if ($(_jqThis).is(':checked'))
                     _this.page_state.graph_type = $(_jqThis).val();
+                _this.graph_refresh = true;
             });
             $('input[type="radio"][name="time_frame"]').change(function (event) {
                 var _jqThis = event.currentTarget;
                 if ($(_jqThis).is(':checked')) {
                     _this.page_state.time_frame = $(_jqThis).val();
+                    if (_this.page_state.model === 'ranking') {
+                        _this.model_state.time_period.setTimePeriod(null, null);
+                        _this.model_state.time_period.setTimePeriod(null, null, false);
+                    }
+                    _this.data_refresh = true;
                     _this.resetButtons();
                 }
             });
@@ -1111,10 +1227,12 @@ define('resources/elements/market-view/data-control-element',["require", "export
                 var _jqThis = event.currentTarget;
                 if ($(_jqThis).is(':checked'))
                     _this.page_state.model = $(_jqThis).val();
+                _this.data_refresh = true;
             });
             $('input[type="checkbox"][name="industry"]').change(function (event) {
                 var _jqThis = event.currentTarget;
                 _this.page_state.exclude_industry = $(_jqThis).is(':checked') ? false : true;
+                _this.data_refresh = true;
             });
             this.initDataTypes();
             this.initFilterOptions();
@@ -1137,6 +1255,7 @@ define('resources/elements/market-view/data-control-element',["require", "export
             });
             this.page_state.compare_list = include;
             this.resetButtons();
+            this.data_refresh = true;
         };
         DataControlElement.prototype.initDataTypes = function () {
             $('input[type="radio"][name="data_type"], input[type="checkbox"][name="data_type"]').unbind('change');
@@ -1160,12 +1279,50 @@ define('resources/elements/market-view/data-control-element',["require", "export
             if (this.page_state.model === 'ranking')
                 $('input[type="checkbox"][name="filter_item"]:first').click();
         };
+        DataControlElement.prototype.initTimePeriodList = function () {
+            var _this = this;
+            $('input[type="radio"][name="time_period"]').change(function (event) {
+                var _jqThis = event.currentTarget;
+                var time_period_buttons = $('input[type="radio"][name="time_period"]');
+                if ($(_jqThis).is(':checked')) {
+                    var current_time_period = $(_jqThis).val().split(' - ');
+                    _this.model_state.time_period.setTimePeriod(current_time_period[0], current_time_period[1]);
+                    var previous_radio_index = $('input[type="radio"][name="time_period"]').index(_jqThis) - 1;
+                    var previous_time_period = previous_radio_index > 0 ? time_period_buttons.eq(previous_radio_index).val().split(' - ') : null;
+                    if (previous_time_period) {
+                        _this.model_state.time_period.setTimePeriod(previous_time_period[0], previous_time_period[1], false);
+                    }
+                    else {
+                        _this.model_state.time_period.setTimePeriod(null, null, false);
+                    }
+                    _this.data_refresh = true;
+                }
+            });
+            $('input[type="radio"][name="time_splice"]').unbind('change');
+            $('input[type="radio"][name="time_splice"]').change(function (event) {
+                var _jqThis = event.currentTarget;
+                if ($(_jqThis).is(':checked')) {
+                    if ($(_jqThis).val() === 'start') {
+                        _this.model_state.time_period.useStartDate();
+                    }
+                    else {
+                        _this.model_state.time_period.useEndDate();
+                    }
+                    _this.data_refresh = true;
+                }
+            });
+        };
         DataControlElement.prototype.resetButtons = function () {
             $.each($('input[type="checkbox"][name="data_type"], input[type="checkbox"][name="filter_item"]'), function (key, value) {
                 if ($(value).is(':checked'))
                     $(value).click();
             });
             $('input[type="radio"][name="data_type"]:first').click();
+            if (this.page_state.model === 'ranking') {
+                $('input[type="radio"][name="time_period"]').unbind('change');
+                $('input[type="radio"][name="time_period"]:first').click();
+                this.initTimePeriodList();
+            }
             this.initDataTypes();
             this.initFilterOptions();
         };
@@ -1184,10 +1341,25 @@ define('resources/elements/market-view/data-control-element',["require", "export
                 _this.initFilterOptions();
             });
             this.mutation_observers.push(filter_list_observer.observe($('#filter_list')[0], { childList: true, subtree: true, characterData: true }));
-            this.observers.push(this.bindingEngine.propertyObserver(this, 'model_state')
+            this.observers.push(this.binding_engine.propertyObserver(this, 'model_state')
                 .subscribe(function (new_value, old_value) {
-                _this.initDataTypes();
-                _this.initFilterOptions();
+                if (_this.model_state) {
+                    _this.filter_list = _this.model_state.filter_list;
+                    _this.initFilterOptions();
+                    _this.initDataTypes();
+                    if (_this.model_state.hasOwnProperty('time_period')) {
+                        if (_this.page_state.time_frame === 'week') {
+                            _this.time_period_list = _this.model_state.time_period.getWeek();
+                        }
+                        else if (_this.page_state.time_frame === 'month') {
+                            _this.time_period_list = _this.model_state.time_period.getMonth();
+                        }
+                        else if (_this.page_state.time_frame === 'year') {
+                            _this.time_period_list = _this.model_state.time_period.getYear();
+                        }
+                        _this.initTimePeriodList();
+                    }
+                }
             }));
         };
         DataControlElement.prototype.detached = function () {
@@ -1210,11 +1382,27 @@ define('resources/elements/market-view/data-control-element',["require", "export
             aurelia_framework_2.bindable({ defaultBindingMode: aurelia_framework_2.bindingMode.twoWay }),
             __metadata("design:type", Boolean)
         ], DataControlElement.prototype, "display_all_rows", void 0);
+        __decorate([
+            aurelia_framework_2.bindable({ defaultBindingMode: aurelia_framework_2.bindingMode.twoWay }),
+            __metadata("design:type", Array)
+        ], DataControlElement.prototype, "time_period_list", void 0);
+        __decorate([
+            aurelia_framework_2.bindable({ defaultBindingMode: aurelia_framework_2.bindingMode.twoWay }),
+            __metadata("design:type", Array)
+        ], DataControlElement.prototype, "filter_list", void 0);
+        __decorate([
+            aurelia_framework_2.bindable({ defaultBindingMode: aurelia_framework_2.bindingMode.twoWay }),
+            __metadata("design:type", Boolean)
+        ], DataControlElement.prototype, "data_refresh", void 0);
+        __decorate([
+            aurelia_framework_2.bindable({ defaultBindingMode: aurelia_framework_2.bindingMode.twoWay }),
+            __metadata("design:type", Boolean)
+        ], DataControlElement.prototype, "graph_refresh", void 0);
         DataControlElement = __decorate([
             aurelia_framework_1.customElement('data-control'),
             aurelia_framework_2.useView('./data-control-element.html'),
-            aurelia_framework_2.inject(aurelia_binding_1.BindingEngine, aurelia_event_aggregator_1.EventAggregator, aurelia_framework_2.TaskQueue),
-            __metadata("design:paramtypes", [aurelia_binding_1.BindingEngine, aurelia_event_aggregator_1.EventAggregator, aurelia_framework_2.TaskQueue])
+            aurelia_framework_2.inject(aurelia_binding_1.BindingEngine, aurelia_event_aggregator_1.EventAggregator),
+            __metadata("design:paramtypes", [aurelia_binding_1.BindingEngine, aurelia_event_aggregator_1.EventAggregator])
         ], DataControlElement);
         return DataControlElement;
     }());
@@ -1301,6 +1489,7 @@ define('resources/elements/market-view/data-table-element',["require", "exports"
             this.binding_engine = binding_engine;
             this.events = events;
             this.display_all_rows = false;
+            this.graph_refresh = false;
             this.subscription = null;
             this.data_table = null;
             this.hidden_columns = [];
@@ -1330,6 +1519,7 @@ define('resources/elements/market-view/data-table-element',["require", "exports"
             }
             var data = this.data_table.buttons.exportData(export_config);
             this.table_output = data;
+            this.graph_refresh = true;
         };
         DataTableElement.prototype.setupPivot = function (input) {
             var _this = this;
@@ -1395,6 +1585,10 @@ define('resources/elements/market-view/data-table-element',["require", "exports"
             aurelia_framework_2.bindable({ defaultBindingMode: aurelia_framework_2.bindingMode.twoWay }),
             __metadata("design:type", Object)
         ], DataTableElement.prototype, "table_output", void 0);
+        __decorate([
+            aurelia_framework_2.bindable({ defaultBindingMode: aurelia_framework_2.bindingMode.twoWay }),
+            __metadata("design:type", Boolean)
+        ], DataTableElement.prototype, "graph_refresh", void 0);
         DataTableElement = __decorate([
             aurelia_framework_1.customElement('data-table'),
             aurelia_framework_2.useView('./data-table-element.html'),
@@ -3377,15 +3571,15 @@ define("scripts/vendors/pivot/jquery_pivot.js", [],function(){});
 define('text!app.html', ['module'], function(module) { module.exports = "<template>\n    <div class=\"container body\">\n        <div class=\"main_container\">\n            <!-- main content -->\n            <router-view></router-view>\n            <!-- /main-content -->\n\n            <!-- tsite footer -->\n            <compose view-model=\"./pages/page-elements/site-footer\"></compose>\n            <!-- /site footer -->\n        </div>\n    </div>\n    <load-spinner></load-spinner>\n</template>"; });
 define('text!not-found.html', ['module'], function(module) { module.exports = "<template>\n\t<!-- Header -->\n    <header>\n        <div class=\"container sub-header\">\n            <div class=\"row\">\n                <div class=\"col-lg-12\">\n                    <div class=\"intro-text\">\n                        <span class=\"name\">Whoops, nothing here!</span>\n                    </div>\n                </div>\n            </div>\n        </div>\n    </header>\n\n  \t<section class=\"container text-center\">\n    \t<h1>Something is broken…</h1>\n    \t<p>The page cannot be found.</p>\n  \t</section>\n</template>\n"; });
 define('text!pages/page-elements/sidebar-menu.html', ['module'], function(module) { module.exports = "<template bindable=\"router\">\r\n          <div class=\"col-md-3 left_col\">\r\n          <div class=\"left_col scroll-view\">\r\n            <div class=\"navbar nav_title\" style=\"border: 0;\">\r\n              <a href=\"/\" class=\"site_title\"><span>Market View!</span></a>\r\n            </div>\r\n            <div class=\"clearfix\"></div>\r\n\r\n            <br />\r\n  \r\n            <!-- sidebar menu -->\r\n            <div id=\"sidebar-menu\" class=\"main_menu_side hidden-print main_menu\">\r\n              <div class=\"menu_section active\">\r\n                  <ul class=\"nav side-menu\" style=\"\">\r\n                      <li><a id=\"dataModelli\" click.delegate=\"anchorClicked($event)\"><i class=\"fa fa-database\"></i> Market View <span class=\"fa fa-chevron-down\"></span></a>\r\n                      </li>\r\n                  </ul>\r\n              </div>\r\n            </div>\r\n            <!-- /sidebar menu -->\r\n              \r\n          </div>\r\n        </div>\r\n</template>"; });
+define('text!pages/page-elements/site-footer.html', ['module'], function(module) { module.exports = "<template>  \r\n  <!-- footer content -->\r\n        <footer>\r\n          <div class=\"pull-right\">\r\n            Gentelella - Bootstrap Admin Template by <a href=\"https://colorlib.com\">Colorlib</a>\r\n          </div>\r\n          <div class=\"clearfix\"></div>\r\n        </footer>\r\n        <!-- /footer content -->\r\n</template>"; });
 define('text!less/freelancer.css', ['module'], function(module) { module.exports = "body {\n  font-family: 'Lato', 'Helvetica Neue', Helvetica, Arial, sans-serif;\n  overflow-x: hidden;\n}\np {\n  font-size: 20px;\n}\np.small {\n  font-size: 16px;\n}\na,\na:hover,\na:focus,\na:active,\na.active {\n  color: #18BC9C;\n  outline: none;\n}\nh1,\nh2,\nh3,\nh4,\nh5,\nh6 {\n  font-family: \"Montserrat\", \"Helvetica Neue\", Helvetica, Arial, sans-serif;\n  text-transform: uppercase;\n  font-weight: 700;\n}\n/************Handshake Dividers************/\nhr.hs-light,\nhr.hs-primary {\n  padding: 0;\n  border: none;\n  border-top: solid 5px;\n  text-align: center;\n  max-width: 250px;\n  margin: 25px auto 30px;\n}\nhr.hs-light:after,\nhr.hs-primary:after {\n  content: \"\\f2b5\";\n  font-family: FontAwesome;\n  display: inline-block;\n  position: relative;\n  top: -0.8em;\n  font-size: 2em;\n  padding: 0 0.25em;\n}\nhr.hs-light {\n  border-color: white;\n}\nhr.hs-light:after {\n  background-color: #18BC9C;\n  color: white;\n}\nhr.hs-primary {\n  border-color: #2C3E50;\n}\nhr.hs-primary:after {\n  background-color: white;\n  color: #2C3E50;\n}\n/************Handshake Dividers************/\n/************Star Dividers************/\nhr.star-light,\nhr.star-primary {\n  padding: 0;\n  border: none;\n  border-top: solid 5px;\n  text-align: center;\n  max-width: 250px;\n  margin: 25px auto 30px;\n}\nhr.star-light:after,\nhr.star-primary:after {\n  content: \"\\f005\";\n  font-family: FontAwesome;\n  display: inline-block;\n  position: relative;\n  top: -0.8em;\n  font-size: 2em;\n  padding: 0 0.25em;\n}\nhr.star-light {\n  border-color: white;\n}\nhr.star-light:after {\n  background-color: #18BC9C;\n  color: white;\n}\nhr.star-primary {\n  border-color: #2C3E50;\n}\nhr.star-primary:after {\n  background-color: white;\n  color: #2C3E50;\n}\n/************Star Dividers************/\n.img-centered {\n  margin: 0 auto;\n}\nheader {\n  text-align: center;\n  background: #18BC9C;\n  color: white;\n}\nheader .container {\n  padding-top: 100px;\n  padding-bottom: 50px;\n}\nheader .container.sub-header {\n  padding-top: 125px;\n  padding-bottom: 25px;\n}\nheader img {\n  display: block;\n  margin: 0 auto 20px;\n}\nheader .intro-text .name {\n  display: block;\n  font-family: \"Montserrat\", \"Helvetica Neue\", Helvetica, Arial, sans-serif;\n  text-transform: uppercase;\n  font-weight: 700;\n  font-size: 2em;\n}\nheader .intro-text .skills {\n  font-size: 1.25em;\n  font-weight: 300;\n}\n@media (min-width: 768px) {\n  header .container {\n    padding-top: 200px;\n    padding-bottom: 100px;\n  }\n  header .intro-text .name {\n    font-size: 4.75em;\n  }\n  header .intro-text .skills {\n    font-size: 1.75em;\n  }\n}\n.navbar-custom {\n  background: #2C3E50;\n  font-family: \"Montserrat\", \"Helvetica Neue\", Helvetica, Arial, sans-serif;\n  text-transform: uppercase;\n  font-weight: 700;\n  border: none;\n}\n.navbar-custom a:focus {\n  outline: none;\n}\n.navbar-custom .navbar-brand {\n  color: white;\n}\n.navbar-custom .navbar-brand:hover,\n.navbar-custom .navbar-brand:focus,\n.navbar-custom .navbar-brand:active,\n.navbar-custom .navbar-brand.active {\n  color: white;\n}\n.navbar-custom .navbar-nav {\n  letter-spacing: 1px;\n}\n.navbar-custom .navbar-nav li a {\n  color: white;\n}\n.navbar-custom .navbar-nav li a:hover {\n  color: #18BC9C;\n  outline: none;\n}\n.navbar-custom .navbar-nav li a:focus,\n.navbar-custom .navbar-nav li a:active {\n  color: white;\n}\n.navbar-custom .navbar-nav li.active a {\n  color: white;\n  background: #18BC9C;\n}\n.navbar-custom .navbar-nav li.active a:hover,\n.navbar-custom .navbar-nav li.active a:focus,\n.navbar-custom .navbar-nav li.active a:active {\n  color: white;\n  background: #18BC9C;\n}\n.navbar-custom .navbar-toggle {\n  color: white;\n  text-transform: uppercase;\n  font-size: 10px;\n  border-color: white;\n}\n.navbar-custom .navbar-toggle:hover,\n.navbar-custom .navbar-toggle:focus {\n  background-color: #18BC9C;\n  color: white;\n  border-color: #18BC9C;\n}\n@media (min-width: 768px) {\n  .navbar-custom {\n    padding: 25px 0;\n    -webkit-transition: padding 0.3s;\n    -moz-transition: padding 0.3s;\n    transition: padding 0.3s;\n  }\n  .navbar-custom .navbar-brand {\n    font-size: 2em;\n    -webkit-transition: all 0.3s;\n    -moz-transition: all 0.3s;\n    transition: all 0.3s;\n  }\n  .navbar-custom.affix {\n    padding: 10px 0;\n  }\n  .navbar-custom.affix .navbar-brand {\n    font-size: 1.5em;\n  }\n}\nsection {\n  padding: 100px 0;\n}\nsection h2 {\n  margin: 0;\n  font-size: 3em;\n}\nsection.success {\n  background: #18BC9C;\n  color: white;\n}\n@media (max-width: 767px) {\n  section {\n    padding: 75px 0;\n  }\n  section.first {\n    padding-top: 75px;\n  }\n}\n#portfolio .portfolio-item {\n  margin: 0 0 15px;\n  right: 0;\n  padding-bottom: 25px;\n}\n#portfolio .portfolio-item .portfolio-link {\n  display: block;\n  position: relative;\n  max-width: 400px;\n  margin: 0 auto;\n}\n#portfolio .portfolio-item .portfolio-link .caption {\n  background: rgba(24, 188, 156, 0.9);\n  position: absolute;\n  width: 100%;\n  height: 100%;\n  opacity: 0;\n  transition: all ease 0.5s;\n  -webkit-transition: all ease 0.5s;\n  -moz-transition: all ease 0.5s;\n}\n#portfolio .portfolio-item .portfolio-link .caption:hover {\n  opacity: 1;\n}\n#portfolio .portfolio-item .portfolio-link .caption .caption-content {\n  position: absolute;\n  width: 100%;\n  height: 20px;\n  font-size: 20px;\n  text-align: center;\n  top: 50%;\n  margin-top: -12px;\n  color: white;\n}\n#portfolio .portfolio-item .portfolio-link .caption .caption-content i {\n  margin-top: -12px;\n}\n#portfolio .portfolio-item .portfolio-link .caption .caption-content h3,\n#portfolio .portfolio-item .portfolio-link .caption .caption-content h4 {\n  margin: 0;\n}\n#portfolio * {\n  z-index: 2;\n}\n@media (min-width: 767px) {\n  #portfolio .portfolio-item {\n    margin: 0 0 30px;\n  }\n}\n.floating-label-form-group {\n  position: relative;\n  margin-bottom: 0;\n  padding-bottom: 0.5em;\n  border-bottom: 1px solid #eeeeee;\n}\n.floating-label-form-group input,\n.floating-label-form-group textarea {\n  z-index: 1;\n  position: relative;\n  padding-right: 0;\n  padding-left: 0;\n  border: none;\n  border-radius: 0;\n  font-size: 1.5em;\n  background: none;\n  box-shadow: none !important;\n  resize: none;\n}\n.floating-label-form-group label {\n  display: block;\n  z-index: 0;\n  position: relative;\n  top: 2em;\n  margin: 0;\n  font-size: 0.85em;\n  line-height: 1.764705882em;\n  vertical-align: middle;\n  vertical-align: baseline;\n  opacity: 0;\n  -webkit-transition: top 0.3s ease,opacity 0.3s ease;\n  -moz-transition: top 0.3s ease,opacity 0.3s ease;\n  -ms-transition: top 0.3s ease,opacity 0.3s ease;\n  transition: top 0.3s ease,opacity 0.3s ease;\n}\n.floating-label-form-group:not(:first-child) {\n  padding-left: 14px;\n  border-left: 1px solid #eeeeee;\n}\n.floating-label-form-group-with-value label {\n  top: 0;\n  opacity: 1;\n}\n.floating-label-form-group-with-focus label {\n  color: #18BC9C;\n}\nlabel.label-lg {\n  font-size: 1.5em;\n  line-height: 1.764705882em;\n}\nform .row:first-child .floating-label-form-group {\n  border-top: 1px solid #eeeeee;\n}\nfooter {\n  color: white;\n}\nfooter h3 {\n  margin-bottom: 30px;\n}\nfooter .footer-above {\n  padding-top: 50px;\n  background-color: #2C3E50;\n}\nfooter .footer-col {\n  margin-bottom: 50px;\n}\nfooter .footer-below {\n  padding: 25px 0;\n  background-color: #233140;\n}\n.btn-outline {\n  color: white;\n  font-size: 20px;\n  border: solid 2px white;\n  background: transparent;\n  transition: all 0.3s ease-in-out;\n  margin-top: 15px;\n}\n.btn-outline:hover,\n.btn-outline:focus,\n.btn-outline:active,\n.btn-outline.active {\n  color: #18BC9C;\n  background: white;\n  border: solid 2px white;\n}\n.btn-primary {\n  color: white;\n  background-color: #2C3E50;\n  border-color: #2C3E50;\n  font-weight: 700;\n}\n.btn-primary:hover,\n.btn-primary:focus,\n.btn-primary:active,\n.btn-primary.active,\n.open .dropdown-toggle.btn-primary {\n  color: white;\n  background-color: #1a242f;\n  border-color: #161f29;\n}\n.btn-primary:active,\n.btn-primary.active,\n.open .dropdown-toggle.btn-primary {\n  background-image: none;\n}\n.btn-primary.disabled,\n.btn-primary[disabled],\nfieldset[disabled] .btn-primary,\n.btn-primary.disabled:hover,\n.btn-primary[disabled]:hover,\nfieldset[disabled] .btn-primary:hover,\n.btn-primary.disabled:focus,\n.btn-primary[disabled]:focus,\nfieldset[disabled] .btn-primary:focus,\n.btn-primary.disabled:active,\n.btn-primary[disabled]:active,\nfieldset[disabled] .btn-primary:active,\n.btn-primary.disabled.active,\n.btn-primary[disabled].active,\nfieldset[disabled] .btn-primary.active {\n  background-color: #2C3E50;\n  border-color: #2C3E50;\n}\n.btn-primary .badge {\n  color: #2C3E50;\n  background-color: white;\n}\n.btn-success {\n  color: white;\n  background-color: #18BC9C;\n  border-color: #18BC9C;\n  font-weight: 700;\n}\n.btn-success:hover,\n.btn-success:focus,\n.btn-success:active,\n.btn-success.active,\n.open .dropdown-toggle.btn-success {\n  color: white;\n  background-color: #128f76;\n  border-color: #11866f;\n}\n.btn-success:active,\n.btn-success.active,\n.open .dropdown-toggle.btn-success {\n  background-image: none;\n}\n.btn-success.disabled,\n.btn-success[disabled],\nfieldset[disabled] .btn-success,\n.btn-success.disabled:hover,\n.btn-success[disabled]:hover,\nfieldset[disabled] .btn-success:hover,\n.btn-success.disabled:focus,\n.btn-success[disabled]:focus,\nfieldset[disabled] .btn-success:focus,\n.btn-success.disabled:active,\n.btn-success[disabled]:active,\nfieldset[disabled] .btn-success:active,\n.btn-success.disabled.active,\n.btn-success[disabled].active,\nfieldset[disabled] .btn-success.active {\n  background-color: #18BC9C;\n  border-color: #18BC9C;\n}\n.btn-success .badge {\n  color: #18BC9C;\n  background-color: white;\n}\n.btn-social {\n  display: inline-block;\n  height: 50px;\n  width: 50px;\n  border: 2px solid white;\n  border-radius: 100%;\n  text-align: center;\n  font-size: 20px;\n  line-height: 45px;\n}\n.btn:focus,\n.btn:active,\n.btn.active {\n  outline: none;\n}\n.scroll-top {\n  position: fixed;\n  right: 2%;\n  bottom: 2%;\n  width: 50px;\n  height: 50px;\n  z-index: 1049;\n}\n.scroll-top .btn {\n  font-size: 20px;\n  width: 50px;\n  height: 50px;\n  border-radius: 100%;\n  line-height: 28px;\n}\n.scroll-top .btn:focus {\n  outline: none;\n}\n.portfolio-modal .modal-content {\n  border-radius: 0;\n  background-clip: border-box;\n  -webkit-box-shadow: none;\n  box-shadow: none;\n  border: none;\n  min-height: 100%;\n  padding: 100px 0;\n  text-align: center;\n}\n.portfolio-modal .modal-content h2 {\n  margin: 0;\n  font-size: 3em;\n}\n.portfolio-modal .modal-content img {\n  margin-bottom: 30px;\n}\n.portfolio-modal .modal-content .item-details {\n  margin: 30px 0;\n}\n.portfolio-modal .close-modal {\n  position: absolute;\n  width: 75px;\n  height: 75px;\n  background-color: transparent;\n  top: 25px;\n  right: 25px;\n  cursor: pointer;\n}\n.portfolio-modal .close-modal:hover {\n  opacity: 0.3;\n}\n.portfolio-modal .close-modal .lr {\n  height: 75px;\n  width: 1px;\n  margin-left: 35px;\n  background-color: #2C3E50;\n  transform: rotate(45deg);\n  -ms-transform: rotate(45deg);\n  /* IE 9 */\n  -webkit-transform: rotate(45deg);\n  /* Safari and Chrome */\n  z-index: 1051;\n}\n.portfolio-modal .close-modal .lr .rl {\n  height: 75px;\n  width: 1px;\n  background-color: #2C3E50;\n  transform: rotate(90deg);\n  -ms-transform: rotate(90deg);\n  /* IE 9 */\n  -webkit-transform: rotate(90deg);\n  /* Safari and Chrome */\n  z-index: 1052;\n}\n.portfolio-modal .modal-backdrop {\n  opacity: 0;\n  display: none;\n}\n"; });
 define('text!less/mixins.css', ['module'], function(module) { module.exports = ""; });
 define('text!less/variables.css', ['module'], function(module) { module.exports = ""; });
-define('text!pages/page-elements/site-footer.html', ['module'], function(module) { module.exports = "<template>  \r\n  <!-- footer content -->\r\n        <footer>\r\n          <div class=\"pull-right\">\r\n            Gentelella - Bootstrap Admin Template by <a href=\"https://colorlib.com\">Colorlib</a>\r\n          </div>\r\n          <div class=\"clearfix\"></div>\r\n        </footer>\r\n        <!-- /footer content -->\r\n</template>"; });
 define('text!pages/page-elements/topbar-menu.html', ['module'], function(module) { module.exports = "<template>\r\n  <!-- top navigation -->\r\n        <div class=\"top_nav\">\r\n            <div class=\"nav_menu\">\r\n                <nav style=\"height: 23px;\">\r\n                </nav>\r\n            </div>\r\n            </div>\r\n            <!-- /top navigation -->        \r\n</template>"; });
 define('text!resources/plugins/palette.html', ['module'], function(module) { module.exports = "<template></template>"; });
-define('text!pages/home/components/index.html', ['module'], function(module) { module.exports = "<template>\r\n    <!-- sidebar menu -->\r\n    <compose router.bind=\"router\" view-model=\"pages/page-elements/sidebar-menu\"></compose>\r\n    <!-- /sidebar menu -->\r\n\r\n    <!-- top navigation -->\r\n    <compose view-model=\"pages/page-elements/topbar-menu\"></compose>\r\n    <!-- /top navigation -->\r\n\r\n    <div class=\"right_col\" role=\"main\">\r\n        <!-- market view panel -->\r\n        <div id=\"market_view\" class=\"row\">\r\n            <div class=\"col-md-12 col-sm-12 col-xs-12\">\r\n                <div class=\"x_panel\">\r\n                    <div class=\"x_content\">\r\n                        <div id=\"market_view_controls\">\r\n                            <div class=\"x_panel\">\r\n                                <div class=\"x_content\">\r\n                                    <data-control page_state.bind=\"page_state\" model_state.bind=\"model_state\" display_all_rows.bind=\"display_all_rows\"></data-control>\r\n                                </div>\r\n                            </div>\r\n                        </div>\r\n                        \r\n                        <div id=\"market_view_chart\" show.bind=\"page_state.model !== 'ranking'\">\r\n                            <div class=\"x_panel\">\r\n                                <div class=\"x_content\">\r\n                                    <data-graph graph_input.bind=\"graph_input\"></data-graph>\r\n                                </div>\r\n                            </div>\r\n                        </div>\r\n\r\n                        <div id=\"market_view_table\">\r\n                            <div class=\"x_panel\">\r\n                                <div class=\"x_content\">\r\n                                    <data-table table_input.bind=\"table_input\" table_output.bind=\"table_output\" display_all_rows.bind=\"display_all_rows\"></data-table>\r\n                                </div>\r\n                            </div>\r\n                        </div>\r\n                    </div>\r\n                </div>\r\n            </div>\r\n        </div> \r\n    </div>\r\n</template>"; });
+define('text!pages/home/components/index.html', ['module'], function(module) { module.exports = "<template>\r\n    <!-- sidebar menu -->\r\n    <compose router.bind=\"router\" view-model=\"pages/page-elements/sidebar-menu\"></compose>\r\n    <!-- /sidebar menu -->\r\n\r\n    <!-- top navigation -->\r\n    <compose view-model=\"pages/page-elements/topbar-menu\"></compose>\r\n    <!-- /top navigation -->\r\n\r\n    <div class=\"right_col\" role=\"main\">\r\n        <!-- market view panel -->\r\n        <div id=\"market_view\" class=\"row\">\r\n            <div class=\"col-md-12 col-sm-12 col-xs-12\">\r\n                <div class=\"x_panel\">\r\n                    <div class=\"x_content\">\r\n                        <div id=\"market_view_controls\">\r\n                            <div class=\"x_panel\">\r\n                                <div class=\"x_content\">\r\n                                    <data-control page_state.bind=\"page_state\" model_state.bind=\"model_state\" data_refresh.bind=\"data_refresh\" graph_refresh.bind=\"graph_refresh\" display_all_rows.bind=\"display_all_rows\"></data-control>\r\n                                </div>\r\n                            </div>\r\n                        </div>\r\n                        \r\n                        <div id=\"market_view_chart\" show.bind=\"page_state.model !== 'ranking'\">\r\n                            <div class=\"x_panel\">\r\n                                <div class=\"x_content\">\r\n                                    <data-graph graph_input.bind=\"graph_input\"></data-graph>\r\n                                </div>\r\n                            </div>\r\n                        </div>\r\n\r\n                        <div id=\"market_view_table\">\r\n                            <div class=\"x_panel\">\r\n                                <div class=\"x_content\">\r\n                                    <data-table table_input.bind=\"table_input\" table_output.bind=\"table_output\" graph_refresh.bind=\"graph_refresh\" display_all_rows.bind=\"display_all_rows\"></data-table>\r\n                                </div>\r\n                            </div>\r\n                        </div>\r\n                    </div>\r\n                </div>\r\n            </div>\r\n        </div> \r\n    </div>\r\n</template>"; });
 define('text!resources/elements/common/load-spinner-element.html', ['module'], function(module) { module.exports = "<template>\r\n\t<require from=\"pure-css-loader/css-loader.css\"></require>\r\n\t<div id=\"load-spinner\" style=\"display: none;\">\r\n\t\t<div class=\"loader loader-default is-active\"></div>\r\n\t</div>\r\n</template>"; });
-define('text!resources/elements/market-view/data-control-element.html', ['module'], function(module) { module.exports = "<template>\r\n\t<div id=\"control-container\" class=\"row center-block\">\r\n\t\t<div class=\"pull-left\" style=\"margin-right: 15px;\">\r\n\t\t\t\r\n\t\t</div>\r\n\r\n\t\t<div class=\"pull-left\" style=\"margin-right: 15px;\">\r\n\t\t\t<div class=\"btn-group\">\r\n              \t<button type=\"button\" class=\"btn btn-dark\">Data Sets</button>\r\n              \t<button type=\"button\" class=\"btn btn-dark dropdown-toggle\" data-toggle=\"dropdown\" aria-expanded=\"false\">\r\n                \t<span class=\"caret\"></span>\r\n                \t<span class=\"sr-only\">Toggle Dropdown</span>\r\n              \t</button>\r\n              \t<div class=\"btn-group-vertical dropdown-menu\" data-toggle=\"buttons\" role=\"menu\">\r\n\t                <label class=\"btn btn-dark active\">\r\n\t\t\t         \t<input type=\"radio\" name=\"data_set\" value=\"brandshare\" id=\"brandshareModel\"> Dataset 1\r\n\t\t\t        </label>\r\n\t\t\t        <label class=\"btn btn-dark\">\r\n\t\t\t          \t<input type=\"radio\" name=\"data_set\" value=\"salesgrowth\" id=\"salesgrowthModel\"> Dataset 2\r\n\t\t\t        </label>\r\n\t\t\t        <label class=\"btn btn-dark\">\r\n\t\t\t          \t<input type=\"radio\" name=\"data_set\" value=\"pricing\" id=\"pricingModel\"> Dataset 3\r\n\t\t\t        </label>\r\n\t\t\t        <label class=\"btn btn-dark\">\r\n\t\t\t          \t<input type=\"radio\" name=\"data_set\" value=\"ranking\" id=\"rankingModel\"> Dataset 4\r\n\t\t\t        </label>\r\n\t            </div>\t\r\n            </div>\r\n\t\t</div>\r\n\r\n\t\t<div class=\"pull-left\" style=\"margin-right: 15px;\">\r\n\t\t\t<div class=\"btn-group\">\r\n              \t<button type=\"button\" class=\"btn btn-dark\">Data Model</button>\r\n              \t<button type=\"button\" class=\"btn btn-dark dropdown-toggle\" data-toggle=\"dropdown\" aria-expanded=\"false\">\r\n                \t<span class=\"caret\"></span>\r\n                \t<span class=\"sr-only\">Toggle Dropdown</span>\r\n              \t</button>\r\n              \t<div class=\"btn-group-vertical dropdown-menu\" data-toggle=\"buttons\" role=\"menu\">\r\n\t                <label class=\"btn btn-dark active\">\r\n\t\t\t         \t<input type=\"radio\" name=\"data_model\" value=\"brandshare\" id=\"brandshareModel\"> Brand Share\r\n\t\t\t        </label>\r\n\t\t\t        <label class=\"btn btn-dark\">\r\n\t\t\t          \t<input type=\"radio\" name=\"data_model\" value=\"salesgrowth\" id=\"salesgrowthModel\"> Sales Growth\r\n\t\t\t        </label>\r\n\t\t\t        <label class=\"btn btn-dark\">\r\n\t\t\t          \t<input type=\"radio\" name=\"data_model\" value=\"pricing\" id=\"pricingModel\"> Pricing\r\n\t\t\t        </label>\r\n\t\t\t        <label class=\"btn btn-dark\">\r\n\t\t\t          \t<input type=\"radio\" name=\"data_model\" value=\"ranking\" id=\"rankingModel\"> Ranking\r\n\t\t\t        </label>\r\n\t            </div>\t\r\n            </div>\r\n\t\t</div> \r\n\r\n\t\t<div class=\"pull-left\" style=\"margin-right: 15px;\">\r\n\t\t\t<div id=\"data_type_list\" class=\"dropdown btn-group\">\r\n              \t<button type=\"button\" class=\"btn btn-dark\">Data Type</button>\r\n              \t<button type=\"button\" class=\"btn btn-dark dropdown-toggle\" data-toggle=\"dropdown\" aria-expanded=\"false\">\r\n                \t<span class=\"caret\"></span>\r\n                \t<span class=\"sr-only\">Toggle Dropdown</span>\r\n              \t</button>\r\n              \t<div class=\"btn-group-vertical dropdown-menu\" data-toggle=\"buttons\" role=\"menu\">\r\n              \t\t<label if.bind=\"page_state.model === 'ranking'\" class=\"btn btn-dark active\" repeat.for=\"type of model_state.data_types\">\r\n              \t\t\t<input type=\"checkbox\" name=\"data_type\" value=\"${type}\" checked> ${type}\r\n              \t\t</label>\r\n              \t\t<label if.bind=\"page_state.model !== 'ranking'\" class=\"btn btn-dark\" class.bind=\"$first ? 'active' : ''\" repeat.for=\"type of model_state.data_types\">\r\n              \t\t\t<input type=\"radio\" name=\"data_type\" value=\"${type}\"> ${type}\r\n              \t\t</label>\r\n\t            </div>\t\r\n            </div>\r\n\t\t</div>\r\n\r\n\t\t<div class=\"pull-left\" style=\"margin-right: 15px;\">\r\n\t\t\t<div id=\"filter_list\" class=\"dropdown keep-open btn-group\">\r\n              \t<button type=\"button\" class=\"dLabel btn btn-dark\">Filter</button>\r\n              \t<button type=\"button\" class=\"dToggle btn btn-dark dropdown-toggle\" data-toggle=\"dropdown\" aria-expanded=\"false\">\r\n                \t<span class=\"caret\"></span>\r\n                \t<span class=\"sr-only\">Toggle Dropdown</span>\r\n              \t</button>\r\n              \t<div class=\"btn-group-vertical dropdown-menu\" data-toggle=\"buttons\" role=\"menu\">\r\n              \t\t<label class=\"btn btn-dark\" repeat.for=\"item of model_state.filter_list\">\r\n              \t\t\t<input type=\"checkbox\" name=\"filter_item\" value=\"${item}\"> ${item}\r\n              \t\t</label>\r\n\t            </div>\t\r\n            </div>\r\n\t\t</div>\r\n\r\n\t\t<div show.bind=\"page_state.model !== 'ranking'\" class=\"pull-left\" style=\"margin-right: 15px;\">\r\n\t\t\t<div id=\"compare_entries\" class=\"dropdown keep-open btn-group\">\r\n              \t<button type=\"button\" class=\"dLabel btn btn-dark\">Compare</button>\r\n              \t<button type=\"button\" class=\"dToggle btn btn-dark dropdown-toggle\" data-toggle=\"dropdown\" aria-expanded=\"false\">\r\n                \t<span class=\"caret\"></span>\r\n                \t<span class=\"sr-only\">Toggle Dropdown</span>\r\n              \t</button>\r\n              \t<div class=\"btn-group-vertical dropdown-menu\" data-toggle=\"buttons\" role=\"menu\">\r\n              \t\t<label class=\"btn btn-dark active\">\r\n\t\t\t          \t<input type=\"checkbox\" name=\"industry\" checked> Industry\r\n\t\t\t        </label>\r\n              \t\t<label class=\"btn btn-dark\" repeat.for=\"item of model_state.compare_options\">\r\n              \t\t\t<input type=\"checkbox\" name=\"compare_option\" value=\"${item}\"> ${item}\r\n              \t\t</label>\r\n\t            </div>\t\r\n            </div>\r\n\t\t</div> \r\n\r\n\t\t<div show.bind=\"page_state.model !== 'ranking'\" class=\"pull-left\" style=\"margin-right: 15px;\">\r\n\t\t\t<div class=\"btn-group\" data-toggle=\"buttons\">\r\n\t\t        <label class=\"btn btn-dark active\">\r\n\t\t          \t<input type=\"radio\" name=\"graph_type\" value=\"line\" id=\"lineGraphType\"> Line\r\n\t\t        </label>\r\n\t\t        <label class=\"btn btn-dark\">\r\n\t\t          \t<input type=\"radio\" name=\"graph_type\" value=\"bar\" id=\"barGraphType\"> Bar\r\n\t\t        </label>\r\n\t\t        <label class=\"btn btn-dark\">\r\n\t\t          \t<input type=\"radio\" name=\"graph_type\" value=\"pie\" id=\"pieGraphType\"> Pie\r\n\t\t        </label>\r\n\t\t    </div>\r\n\t\t</div>\r\n\r\n\t\t<div class=\"pull-left\" style=\"margin-right: 15px;\">\r\n\t\t\t<div id=\"time-period-buttons\">\r\n\t\t\t\t<div class=\"btn-group\" data-toggle=\"buttons\">\r\n\t\t\t        <label class=\"btn btn-dark active\">\r\n\t\t\t         \t<input type=\"radio\" name=\"time_frame\" value=\"week\" id=\"weekTimeFrame\"> Week\r\n\t\t\t        </label>\r\n\t\t\t        <label class=\"btn btn-dark\">\r\n\t\t\t          \t<input type=\"radio\" name=\"time_frame\" value=\"month\" id=\"monthTimeFrame\"> Month\r\n\t\t\t        </label>\r\n\t\t\t        <label class=\"btn btn-dark\">\r\n\t\t\t          \t<input type=\"radio\" name=\"time_frame\" value=\"year\" id=\"yearTimeFrame\"> Year\r\n\t\t\t        </label>\r\n\t\t\t    </div>\r\n\t\t\t</div>\r\n\t\t</div>\r\n\t\t<!--div show.bind=\"page_state.model === 'ranking'\" id=\"time-period-dropdown\" class=\"pull-left\" style=\"margin-right: 15px;\">\r\n\t\t\t<div id=\"timePeriodList\" show.bind=\"timePeriodList.length\" class=\"btn-group\">\r\n              \t<button type=\"button\" class=\"btn btn-dark\">Time Period</button>\r\n              \t<button type=\"button\" class=\"btn btn-dark dropdown-toggle\" data-toggle=\"dropdown\" aria-expanded=\"false\">\r\n                \t<span class=\"caret\"></span>\r\n                \t<span class=\"sr-only\">Toggle Dropdown</span>\r\n              \t</button>\r\n              \t<div class=\"btn-group-vertical dropdown-menu\" data-toggle=\"buttons\" role=\"menu\" style=\"max-height: 200px; overflow-y: auto;\">\r\n\t                <label class=\"btn btn-dark\" repeat.for=\"timePeriod of timePeriodList\">\r\n              \t\t\t<input type=\"radio\" name=\"time_period\" value=\"${timePeriod}\"> ${timePeriod}\r\n              \t\t</label>\r\n\t            </div>\t\r\n            </div>\r\n\t\t</div-->\r\n\t\t<div class=\"pull-left\" style=\"margin-right: 15px;\">\r\n\t\t\t<div class=\"btn-group\" data-toggle=\"buttons\">\r\n\t\t        <label class=\"btn btn-dark active\">\r\n\t\t         \t<input type=\"radio\" name=\"display_option\" value=\"current\"> Current Page\r\n\t\t        </label>\r\n\t\t        <label class=\"btn btn-dark\">\r\n\t\t          \t<input type=\"radio\" name=\"display_option\" value=\"all\"> All Pages\r\n\t\t        </label>\r\n\t\t    </div>\r\n\t\t</div>\r\n\t</div>\r\n</template>"; });
+define('text!resources/elements/market-view/data-control-element.html', ['module'], function(module) { module.exports = "<template>\r\n\t<div id=\"control-container\" class=\"row center-block\">\r\n\t\t<div class=\"pull-left\" style=\"margin-right: 15px;\">\r\n\t\t\t\r\n\t\t</div>\r\n\r\n\t\t<div class=\"pull-left\" style=\"margin-right: 15px;\">\r\n\t\t\t<div class=\"btn-group\">\r\n              \t<button type=\"button\" class=\"btn btn-dark\">Data Sets</button>\r\n              \t<button type=\"button\" class=\"btn btn-dark dropdown-toggle\" data-toggle=\"dropdown\" aria-expanded=\"false\">\r\n                \t<span class=\"caret\"></span>\r\n                \t<span class=\"sr-only\">Toggle Dropdown</span>\r\n              \t</button>\r\n              \t<div class=\"btn-group-vertical dropdown-menu\" data-toggle=\"buttons\" role=\"menu\">\r\n\t                <label class=\"btn btn-dark active\">\r\n\t\t\t         \t<input type=\"radio\" name=\"data_set\" value=\"brandshare\" id=\"brandshareModel\"> Dataset 1\r\n\t\t\t        </label>\r\n\t\t\t        <label class=\"btn btn-dark\">\r\n\t\t\t          \t<input type=\"radio\" name=\"data_set\" value=\"salesgrowth\" id=\"salesgrowthModel\"> Dataset 2\r\n\t\t\t        </label>\r\n\t\t\t        <label class=\"btn btn-dark\">\r\n\t\t\t          \t<input type=\"radio\" name=\"data_set\" value=\"pricing\" id=\"pricingModel\"> Dataset 3\r\n\t\t\t        </label>\r\n\t\t\t        <label class=\"btn btn-dark\">\r\n\t\t\t          \t<input type=\"radio\" name=\"data_set\" value=\"ranking\" id=\"rankingModel\"> Dataset 4\r\n\t\t\t        </label>\r\n\t            </div>\t\r\n            </div>\r\n\t\t</div>\r\n\r\n\t\t<div class=\"pull-left\" style=\"margin-right: 15px;\">\r\n\t\t\t<div class=\"btn-group\">\r\n              \t<button type=\"button\" class=\"btn btn-dark\">Data Model</button>\r\n              \t<button type=\"button\" class=\"btn btn-dark dropdown-toggle\" data-toggle=\"dropdown\" aria-expanded=\"false\">\r\n                \t<span class=\"caret\"></span>\r\n                \t<span class=\"sr-only\">Toggle Dropdown</span>\r\n              \t</button>\r\n              \t<div class=\"btn-group-vertical dropdown-menu\" data-toggle=\"buttons\" role=\"menu\">\r\n\t                <label class=\"btn btn-dark active\">\r\n\t\t\t         \t<input type=\"radio\" name=\"data_model\" value=\"brandshare\" id=\"brandshareModel\"> Brand Share\r\n\t\t\t        </label>\r\n\t\t\t        <label class=\"btn btn-dark\">\r\n\t\t\t          \t<input type=\"radio\" name=\"data_model\" value=\"salesgrowth\" id=\"salesgrowthModel\"> Sales Growth\r\n\t\t\t        </label>\r\n\t\t\t        <label class=\"btn btn-dark\">\r\n\t\t\t          \t<input type=\"radio\" name=\"data_model\" value=\"pricing\" id=\"pricingModel\"> Pricing\r\n\t\t\t        </label>\r\n\t\t\t        <label class=\"btn btn-dark\">\r\n\t\t\t          \t<input type=\"radio\" name=\"data_model\" value=\"ranking\" id=\"rankingModel\"> Ranking\r\n\t\t\t        </label>\r\n\t            </div>\t\r\n            </div>\r\n\t\t</div> \r\n\r\n\t\t<div class=\"pull-left\" style=\"margin-right: 15px;\">\r\n\t\t\t<div id=\"data_type_list\" class=\"dropdown btn-group\">\r\n              \t<button type=\"button\" class=\"btn btn-dark\">Data Type</button>\r\n              \t<button type=\"button\" class=\"btn btn-dark dropdown-toggle\" data-toggle=\"dropdown\" aria-expanded=\"false\">\r\n                \t<span class=\"caret\"></span>\r\n                \t<span class=\"sr-only\">Toggle Dropdown</span>\r\n              \t</button>\r\n              \t<div class=\"btn-group-vertical dropdown-menu\" data-toggle=\"buttons\" role=\"menu\">\r\n              \t\t<label if.bind=\"page_state.model === 'ranking'\" class=\"btn btn-dark active\" repeat.for=\"type of model_state.data_types\">\r\n              \t\t\t<input type=\"checkbox\" name=\"data_type\" value=\"${type}\" checked> ${type}\r\n              \t\t</label>\r\n              \t\t<label if.bind=\"page_state.model !== 'ranking'\" class=\"btn btn-dark\" class.bind=\"$first ? 'active' : ''\" repeat.for=\"type of model_state.data_types\">\r\n              \t\t\t<input type=\"radio\" name=\"data_type\" value=\"${type}\"> ${type}\r\n              \t\t</label>\r\n\t            </div>\t\r\n            </div>\r\n\t\t</div>\r\n\r\n\t\t<div class=\"pull-left\" style=\"margin-right: 15px;\">\r\n\t\t\t<div id=\"filter_list\" class=\"dropdown keep-open btn-group\">\r\n              \t<button type=\"button\" class=\"dLabel btn btn-dark\">Filter</button>\r\n              \t<button type=\"button\" class=\"dToggle btn btn-dark dropdown-toggle\" data-toggle=\"dropdown\" aria-expanded=\"false\">\r\n                \t<span class=\"caret\"></span>\r\n                \t<span class=\"sr-only\">Toggle Dropdown</span>\r\n              \t</button>\r\n              \t<div class=\"btn-group-vertical dropdown-menu\" data-toggle=\"buttons\" role=\"menu\">\r\n              \t\t<label class=\"btn btn-dark\" repeat.for=\"item of filter_list\">\r\n              \t\t\t<input type=\"checkbox\" name=\"filter_item\" value=\"${item}\"> ${item}\r\n              \t\t</label>\r\n\t            </div>\t\r\n            </div>\r\n\t\t</div>\r\n\r\n\t\t<div show.bind=\"page_state.model !== 'ranking'\" class=\"pull-left\" style=\"margin-right: 15px;\">\r\n\t\t\t<div id=\"compare_entries\" class=\"dropdown keep-open btn-group\">\r\n              \t<button type=\"button\" class=\"dLabel btn btn-dark\">Compare</button>\r\n              \t<button type=\"button\" class=\"dToggle btn btn-dark dropdown-toggle\" data-toggle=\"dropdown\" aria-expanded=\"false\">\r\n                \t<span class=\"caret\"></span>\r\n                \t<span class=\"sr-only\">Toggle Dropdown</span>\r\n              \t</button>\r\n              \t<div class=\"btn-group-vertical dropdown-menu\" data-toggle=\"buttons\" role=\"menu\">\r\n              \t\t<label class=\"btn btn-dark active\">\r\n\t\t\t          \t<input type=\"checkbox\" name=\"industry\" checked> Industry\r\n\t\t\t        </label>\r\n              \t\t<label class=\"btn btn-dark\" repeat.for=\"item of model_state.compare_options\">\r\n              \t\t\t<input type=\"checkbox\" name=\"compare_option\" value=\"${item}\"> ${item}\r\n              \t\t</label>\r\n\t            </div>\t\r\n            </div>\r\n\t\t</div> \r\n\r\n\t\t<div show.bind=\"page_state.model !== 'ranking'\" class=\"pull-left\" style=\"margin-right: 15px;\">\r\n\t\t\t<div class=\"btn-group\" data-toggle=\"buttons\">\r\n\t\t        <label class=\"btn btn-dark active\">\r\n\t\t          \t<input type=\"radio\" name=\"graph_type\" value=\"line\" id=\"lineGraphType\"> Line\r\n\t\t        </label>\r\n\t\t        <label class=\"btn btn-dark\">\r\n\t\t          \t<input type=\"radio\" name=\"graph_type\" value=\"bar\" id=\"barGraphType\"> Bar\r\n\t\t        </label>\r\n\t\t        <label class=\"btn btn-dark\">\r\n\t\t          \t<input type=\"radio\" name=\"graph_type\" value=\"pie\" id=\"pieGraphType\"> Pie\r\n\t\t        </label>\r\n\t\t    </div>\r\n\t\t</div>\r\n\r\n\t\t<div class=\"pull-left\" style=\"margin-right: 15px;\">\r\n\t\t\t<div id=\"time-period-buttons\">\r\n\t\t\t\t<div class=\"btn-group\" data-toggle=\"buttons\">\r\n\t\t\t        <label class=\"btn btn-dark active\">\r\n\t\t\t         \t<input type=\"radio\" name=\"time_frame\" value=\"week\" id=\"weekTimeFrame\"> Week\r\n\t\t\t        </label>\r\n\t\t\t        <label class=\"btn btn-dark\">\r\n\t\t\t          \t<input type=\"radio\" name=\"time_frame\" value=\"month\" id=\"monthTimeFrame\"> Month\r\n\t\t\t        </label>\r\n\t\t\t        <label class=\"btn btn-dark\">\r\n\t\t\t          \t<input type=\"radio\" name=\"time_frame\" value=\"year\" id=\"yearTimeFrame\"> Year\r\n\t\t\t        </label>\r\n\t\t\t    </div>\r\n\t\t\t</div>\r\n\t\t</div>\r\n\t\t<div show.bind=\"page_state.model === 'ranking'\" id=\"time-period-dropdown\" class=\"pull-left\" style=\"margin-right: 15px;\">\r\n\t\t\t<div id=\"timePeriodList\" class=\"btn-group\">\r\n              \t<button type=\"button\" class=\"btn btn-dark\">Time Period</button>\r\n              \t<button type=\"button\" class=\"btn btn-dark dropdown-toggle\" data-toggle=\"dropdown\" aria-expanded=\"false\">\r\n                \t<span class=\"caret\"></span>\r\n                \t<span class=\"sr-only\">Toggle Dropdown</span>\r\n              \t</button>\r\n              \t<div class=\"btn-group-vertical dropdown-menu\" data-toggle=\"buttons\" role=\"menu\" style=\"max-height: 200px; overflow-y: auto;\">\r\n\t                <label class=\"btn btn-dark\" repeat.for=\"time_period of time_period_list\">\r\n              \t\t\t<input type=\"radio\" name=\"time_period\" value=\"${time_period}\"> ${time_period}\r\n              \t\t</label>\r\n\t            </div>\t\r\n            </div>\r\n\t\t</div>\r\n\t\t<div show.bind=\"page_state.model === 'ranking'\" class=\"pull-left\" style=\"margin-right: 15px;\">\r\n\t\t\t<div class=\"btn-group\" data-toggle=\"buttons\">\r\n\t\t        <label class=\"btn btn-dark active\">\r\n\t\t         \t<input type=\"radio\" name=\"time_splice\" value=\"start\"> Sales Period Start\r\n\t\t        </label>\r\n\t\t        <label class=\"btn btn-dark\">\r\n\t\t          \t<input type=\"radio\" name=\"time_splice\" value=\"end\"> Sales Period End\r\n\t\t        </label>\r\n\t\t    </div>\r\n\t\t</div>\r\n\t\t<div class=\"pull-left\" style=\"margin-right: 15px;\">\r\n\t\t\t<div class=\"btn-group\" data-toggle=\"buttons\">\r\n\t\t        <label class=\"btn btn-dark active\">\r\n\t\t         \t<input type=\"radio\" name=\"display_option\" value=\"current\"> Current Page\r\n\t\t        </label>\r\n\t\t        <label class=\"btn btn-dark\">\r\n\t\t          \t<input type=\"radio\" name=\"display_option\" value=\"all\"> All Pages\r\n\t\t        </label>\r\n\t\t    </div>\r\n\t\t</div>\r\n\t</div>\r\n</template>"; });
 define('text!resources/elements/market-view/data-graph-element.html', ['module'], function(module) { module.exports = "<template>\r\n\t<div id=\"graph-container\">\r\n\t\t<canvas id=\"chartjsGraph\"></canvas>\r\n\t</div>\r\n</template>"; });
 define('text!resources/elements/market-view/data-table-element.html', ['module'], function(module) { module.exports = "<template>\r\n\t<require from=\"datatables.net-bs/css/dataTables.bootstrap.css\"></require>\r\n\t<div id=\"data-menu-container\" class=\"hidden\"></div>\r\n\t<div id=\"data-table-container\">\r\n\t\t<div id=\"results\" style=\"overflow-x: auto;\">\r\n\t\t\t<table id=\"datatable-responsive\" class=\"table table-striped table-bordered dt-responsive nowrap\" cellspacing=\"0\" width=\"100%\"></table>\r\n\t\t</div>\r\n\t</div>\r\n</template>"; });
 define('text!resources/elements/market-view/import-element.html', ['module'], function(module) { module.exports = "<div class=\"btn-group\" data-toggle=\"buttons\">\r\n    <label class=\"btn btn-dark\">\r\n      \t<input type=\"radio\" name=\"import_btn\" value=\"line\" id=\"lineGraphType\"> Import\r\n    </label>\r\n</div>"; });

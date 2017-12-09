@@ -40,8 +40,8 @@ export class DataTableModel {
 	 * @param string[] table_column_labels
 	 * @return void
 	 */
-	setTableColumnLabels(table_column_labels: string[]): void {
-		this.table_column_labels = table_column_labels || [];
+	setTableColumnLabels(table_column_labels: string[] = []): void {
+		this.table_column_labels = table_column_labels;
 	}
 
 	/**

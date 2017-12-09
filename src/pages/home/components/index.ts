@@ -12,6 +12,8 @@ export class HomeLanding {
 	@bindable({ defaultBindingMode: bindingMode.twoWay }) model_state: any;
 	@bindable({ defaultBindingMode: bindingMode.twoWay }) table_output: any;
 	@bindable({ defaultBindingMode: bindingMode.twoWay }) display_all_rows: boolean = false;
+	@bindable({ defaultBindingMode: bindingMode.twoWay }) data_refresh: boolean = false;
+	@bindable({ defaultBindingMode: bindingMode.twoWay }) graph_refresh: boolean = false;
 	@bindable table_input: any; 
 	@bindable model_data: any;
 	@bindable graph_input: any;	
@@ -19,7 +21,7 @@ export class HomeLanding {
 	private observers: any[] = [];
 
 	
-	constructor(private httpClient: HttpClient, private bindingEngine: BindingEngine, private events: EventAggregator){
+	constructor(private http_client: HttpClient, private binding_engine: BindingEngine, private events: EventAggregator){
 		// initial page state
 		this.page_state = {
 			model: 'brandshare',
@@ -38,7 +40,7 @@ export class HomeLanding {
 		};
 
 		// set httpClient
-		this.httpClient = httpClient.configure(config => {
+		this.http_client = http_client.configure(config => {
 	      config
 	        .useStandardConfiguration()
 	        .withBaseUrl('/');
@@ -57,8 +59,8 @@ export class HomeLanding {
 	private updateDataTable(){
 		if (this.model_data) {
 			this.updateModelProperties();
-			this.model_state = this.model_list[this.page_state.model].getModelState();
 			this.table_input = this.model_list[this.page_state.model].updateDataTable();
+			this.model_state = this.model_list[this.page_state.model].getModelState();
 		} 
 	}
 
@@ -86,7 +88,7 @@ export class HomeLanding {
 	private fetchModelData() {
 		const _class = this;
 		this.spinnerOpen();
-		return this.httpClient.fetch('marketview/data')
+		return this.http_client.fetch('marketview/data')
 			.then(response => response.json())
 			.then(data => {_class.model_data = data})
 			.then(() => {
@@ -98,29 +100,19 @@ export class HomeLanding {
 	 * Creates the subscriber list
 	 */
 	private setObservers(){
-		this.observers.push(this.bindingEngine.propertyObserver(this, 'table_output')
-      		.subscribe((newValue, oldValue) => {
-      			this.updateDataGraph();
+		this.observers.push(this.binding_engine.propertyObserver(this, 'data_refresh')
+      		.subscribe((new_value, old_value) => {
+      			if (this.data_refresh) {
+      				this.updateDataTable();
+      				this.data_refresh = false;
+      			}
       		}));
-		this.observers.push(this.bindingEngine.propertyObserver(this.page_state, 'graph_type')
-      		.subscribe((newValue, oldValue) => {
-      			this.updateDataGraph();
-      		}));
-		this.observers.push(this.bindingEngine.propertyObserver(this.page_state, 'model')
-      		.subscribe((newValue, oldValue) => {
-      			this.updateDataTable();
-      		}));
-		this.observers.push(this.bindingEngine.propertyObserver(this.page_state, 'time_frame')
-      		.subscribe((newValue, oldValue) => {
-      			this.updateDataTable();
-      		}));	
-		this.observers.push(this.bindingEngine.propertyObserver(this.page_state, 'compare_list')
-      		.subscribe((newValue, oldValue) => {
-      			this.updateDataTable();
-      		}));
-		this.observers.push(this.bindingEngine.propertyObserver(this.page_state, 'exclude_industry')
-      		.subscribe((newValue, oldValue) => {
-      			this.updateDataTable();
+		this.observers.push(this.binding_engine.propertyObserver(this, 'graph_refresh')
+      		.subscribe((new_value, old_value) => {
+      			if (this.graph_refresh) {
+      				this.updateDataGraph();
+      				this.graph_refresh = false;
+      			}
       		}));
 	}
 

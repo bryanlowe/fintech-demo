@@ -24,7 +24,7 @@ export class TimePeriodModel {
 	 * @return any
 	 */
 	getWeek(): any {
-		return this.week;
+		return Array.from(this.week);
 	}
 
 	/**
@@ -41,7 +41,7 @@ export class TimePeriodModel {
 	 * @return any
 	 */
 	getMonth(): any {
-		return this.month;
+		return Array.from(this.month);
 	}
 
 	/**
@@ -58,14 +58,14 @@ export class TimePeriodModel {
 	 * @return any
 	 */
 	getYear(): any {
-		return this.year;
+		return Array.from(this.year);
 	}
 
 	/**
 	 * Update time mode to start date
 	 * @return void
 	 */
-	useStartDate() {
+	useStartDate(): void {
 		this.time_mode = TimePeriodModel.START_DATE;
 	}
 
@@ -73,8 +73,17 @@ export class TimePeriodModel {
 	 * Update time mode to end date
 	 * @return void
 	 */
-	useEndDate() {
+	useEndDate(): void {
 		this.time_mode = TimePeriodModel.END_DATE;
+	}
+
+
+	/**
+	 * Returns the current time mode
+	 * @return number
+	 */
+	getTimeMode(): number {
+		return this.time_mode;
 	}
 
 	/**
@@ -84,7 +93,7 @@ export class TimePeriodModel {
 	 * @param bool current_mode
 	 * @return void
 	 */
-	setTimePeriod(start: string, end: string, current_mode: boolean = true) {
+	setTimePeriod(start: string, end: string, current_mode: boolean = true): void {
 		const time_period = current_mode ? this.current_time_period : this.previous_time_period;
 		time_period.set(start, end);
 	}
@@ -94,7 +103,7 @@ export class TimePeriodModel {
 	 * @param bool current_mode
 	 * @return object
 	 */
-	getTimePeriod(current_mode: boolean = true) {
+	getTimePeriod(current_mode: boolean = true): any {
 		return current_mode ? this.current_time_period.get() : this.previous_time_period.get();
 	}
 }
@@ -112,9 +121,9 @@ class TimeFrame {
 	 * @param string end
 	 * @return void
 	 */
-	set(start: string, end: string): void {
-		this.start = new Date(start) || null;
-		this.end = new Date(end) || null;
+	set(start: string = null, end: string = null): void {
+		this.start = start ? new Date(start) : null;
+		this.end = end ? new Date(end) : null;
 	}
 
 	/**

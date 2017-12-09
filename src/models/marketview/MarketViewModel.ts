@@ -82,15 +82,18 @@ export abstract class MarketViewModel {
 
 	/**
 	 * Initializes state params that are used to analyze the data
+	 * @param any[] sample_dataset
 	 * @param any[] sample_product
 	 * @return void
 	 */
-	protected initializeState(sample_product: any[] = []): void {
+	protected initializeState(sample_dataset: any[], sample_product: any[] = []): void {
 		// initialize compare options
-		this.compare_options = this.model_data.map((obj) => {
-			if (this.compare_options.indexOf(obj.brand) === -1) 
-				return obj.brand;
-		});
+		if (!this.compare_list.length){
+			for (let i = 0, ii = sample_dataset.length; i < ii; i++) {
+				if (this.compare_options.indexOf(sample_dataset[i].brand) === -1) 
+					this.compare_options.push(sample_dataset[i].brand);
+			}
+		}
 
 		// initialize filter options
 		if (!this.filter_list.length) 
@@ -108,7 +111,7 @@ export abstract class MarketViewModel {
 	  	let data_array = [].concat.apply([], this.model_data.map((obj) => obj.dataset));
 	  	const sample_product = data_array[0].product;
 
-	  	this.initializeState(sample_product);
+	  	this.initializeState(data_array, sample_product);
 	  	this.fieldDefinitions(sample_product);
 	  	
 	  	data_array = this.pivotData(data_array, totals);

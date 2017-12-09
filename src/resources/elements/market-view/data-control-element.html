@@ -78,7 +78,7 @@
                 	<span class="sr-only">Toggle Dropdown</span>
               	</button>
               	<div class="btn-group-vertical dropdown-menu" data-toggle="buttons" role="menu">
-              		<label class="btn btn-dark" repeat.for="item of model_state.filter_list">
+              		<label class="btn btn-dark" repeat.for="item of filter_list">
               			<input type="checkbox" name="filter_item" value="${item}"> ${item}
               		</label>
 	            </div>	
@@ -132,20 +132,30 @@
 			    </div>
 			</div>
 		</div>
-		<!--div show.bind="page_state.model === 'ranking'" id="time-period-dropdown" class="pull-left" style="margin-right: 15px;">
-			<div id="timePeriodList" show.bind="timePeriodList.length" class="btn-group">
+		<div show.bind="page_state.model === 'ranking'" id="time-period-dropdown" class="pull-left" style="margin-right: 15px;">
+			<div id="timePeriodList" class="btn-group">
               	<button type="button" class="btn btn-dark">Time Period</button>
               	<button type="button" class="btn btn-dark dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
                 	<span class="caret"></span>
                 	<span class="sr-only">Toggle Dropdown</span>
               	</button>
               	<div class="btn-group-vertical dropdown-menu" data-toggle="buttons" role="menu" style="max-height: 200px; overflow-y: auto;">
-	                <label class="btn btn-dark" repeat.for="timePeriod of timePeriodList">
-              			<input type="radio" name="time_period" value="${timePeriod}"> ${timePeriod}
+	                <label class="btn btn-dark" repeat.for="time_period of time_period_list">
+              			<input type="radio" name="time_period" value="${time_period}"> ${time_period}
               		</label>
 	            </div>	
             </div>
-		</div-->
+		</div>
+		<div show.bind="page_state.model === 'ranking'" class="pull-left" style="margin-right: 15px;">
+			<div class="btn-group" data-toggle="buttons">
+		        <label class="btn btn-dark active">
+		         	<input type="radio" name="time_splice" value="start"> Sales Period Start
+		        </label>
+		        <label class="btn btn-dark">
+		          	<input type="radio" name="time_splice" value="end"> Sales Period End
+		        </label>
+		    </div>
+		</div>
 		<div class="pull-left" style="margin-right: 15px;">
 			<div class="btn-group" data-toggle="buttons">
 		        <label class="btn btn-dark active">

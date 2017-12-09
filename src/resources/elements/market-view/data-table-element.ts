@@ -17,6 +17,7 @@ export class DataTableElement {
 	@bindable table_input: any; 
   @bindable display_all_rows: boolean = false; 
   @bindable({ defaultBindingMode: bindingMode.twoWay }) table_output: any;  
+  @bindable({ defaultBindingMode: bindingMode.twoWay }) graph_refresh: boolean = false;
   private subscription: any = null;
   private data_table: any = null;
   private hidden_columns = [];
@@ -49,6 +50,7 @@ export class DataTableElement {
     }
     const data = this.data_table.buttons.exportData(export_config);
     this.table_output = data;
+    this.graph_refresh = true;
   }
 
   private setupPivot(input){
